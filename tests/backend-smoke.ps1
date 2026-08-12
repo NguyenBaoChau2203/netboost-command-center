@@ -113,6 +113,9 @@ try {
     Assert-True ($null -ne $dashboard.dns) 'Dashboard DNS object missing.'
 
     $targets = @(Invoke-RestMethod -Uri "$base/api/cleanup/targets" -Method Get -Headers $authHeaders -TimeoutSec 10)
+    if ($targets.Count -eq 1 -and $targets[0] -is [Array]) {
+        $targets = @($targets[0])
+    }
     $expectedIds = @(
         'user-temp',
         'windows-temp',
@@ -123,7 +126,8 @@ try {
         'thumbnails',
         'inet-cache',
         'recycle-bin',
-        'windows-update',
+        'component-store',
+        'delivery-optimization',
         'windows-font-cache',
         'windows-prefetch',
         'windows-error-reports'
@@ -133,6 +137,35 @@ try {
     foreach ($id in $expectedIds) {
         Assert-True ($actualIds -contains $id) "Cleanup target missing: $id"
     }
+    Assert-True (-not ($actualIds -contains 'windows-update')) 'Unsupported raw Windows Update deletion target is still exposed.'
+
+    foreach ($target in $targets) {
+        Assert-True ($target.PSObject.Properties.Name -contains 'action') "Cleanup target '$($target.id)' is missing action metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'deepOnly') "Cleanup target '$($target.id)' is missing deepOnly metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'safeMinAgeMinutes') "Cleanup target '$($target.id)' is missing safeMinAgeMinutes metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'deepMinAgeMinutes') "Cleanup target '$($target.id)' is missing deepMinAgeMinutes metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'estimatedFileCount') "Cleanup target '$($target.id)' is missing estimatedFileCount metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'estimateComplete') "Cleanup target '$($target.id)' is missing estimateComplete metadata."
+    }
+
+    $userTemp = $targets | Where-Object { $_.id -eq 'user-temp' }
+    Assert-True ($userTemp.safeMinAgeMinutes -eq 1440) 'User Temp safe mode must preserve files newer than 24 hours.'
+    Assert-True ($userTemp.deepMinAgeMinutes -eq 60) 'User Temp deep mode must preserve files newer than 60 minutes.'
+
+    $prefetch = $targets | Where-Object { $_.id -eq 'windows-prefetch' }
+    Assert-True ($prefetch.deepOnly -eq $true) 'Prefetch must be deep-only.'
+    Assert-True ($prefetch.requiresConfirmation -eq $true) 'Prefetch must require explicit confirmation.'
+    Assert-True ($prefetch.deepMinAgeMinutes -ge 43200) 'Prefetch must preserve at least 30 days of recent data.'
+    Assert-True (@($prefetch.includePatterns) -contains '*.pf') 'Prefetch cleanup must only include .pf files.'
+    Assert-True (@($prefetch.excludePathSegments) -contains 'ReadyBoot') 'Prefetch cleanup must exclude ReadyBoot.'
+
+    $componentStore = $targets | Where-Object { $_.id -eq 'component-store' }
+    Assert-True ($componentStore.action -eq 'component-store') 'Component Store must use the supported DISM action.'
+    Assert-True ($componentStore.deepOnly -eq $true) 'Component Store cleanup must be deep-only.'
+    Assert-True ($componentStore.requiresConfirmation -eq $true) 'Component Store cleanup must require confirmation.'
+
+    $deliveryOptimization = $targets | Where-Object { $_.id -eq 'delivery-optimization' }
+    Assert-True ($deliveryOptimization.action -eq 'delivery-optimization') 'Delivery Optimization must use its supported PowerShell action.'
 
     $staticRoot = Invoke-WebRequest -Uri "$base/" -UseBasicParsing -TimeoutSec 5
     Assert-True ($staticRoot.StatusCode -eq 200) 'Static UI root did not respond with 200.'

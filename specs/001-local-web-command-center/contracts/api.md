@@ -101,7 +101,15 @@ Returns supported targets only.
     "label": "Temp nguoi dung",
     "path": "%TEMP%",
     "risk": "low",
+    "action": "filesystem",
+    "deepOnly": false,
+    "safeMinAgeMinutes": 1440,
+    "deepMinAgeMinutes": 60,
+    "includePatterns": ["*"],
+    "excludePathSegments": [],
     "estimatedBytes": 1288490188,
+    "estimatedFileCount": 1820,
+    "estimateComplete": true,
     "requiresConfirmation": false
   }
 ]
@@ -118,6 +126,8 @@ Body:
   "confirmed": true
 }
 ```
+
+Deep-only targets are rejected unless `deep` is `true`. Risky targets and every Deep job require `confirmed: true`.
 
 Response:
 

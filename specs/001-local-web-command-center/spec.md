@@ -43,6 +43,9 @@ As a user, I can choose supported cleanup targets, read the impact warning, conf
 Acceptance:
 - Supported targets match the constitution.
 - Recycle Bin and deep cleanup require explicit confirmation.
+- Safe Temp cleanup preserves the newest 24 hours; Deep Temp cleanup preserves the newest hour.
+- Prefetch is deep-only and limited to `.pf` files older than 30 days.
+- Component Store and Delivery Optimization use supported Windows maintenance commands instead of raw Windows Update cache deletion.
 - Locked files are skipped and listed.
 - The app never stops drivers, force-closes apps, or claims unsupported cleanup targets.
 

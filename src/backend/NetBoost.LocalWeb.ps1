@@ -298,7 +298,13 @@ function New-CleanupTargetDefinition {
         [ValidateSet('low', 'medium', 'high')]
         [string]$Risk,
         [bool]$RequiresConfirmation,
-        [int]$MinAgeMinutes = 0,
+        [ValidateSet('filesystem', 'recycle-bin', 'delivery-optimization', 'component-store')]
+        [string]$Action = 'filesystem',
+        [bool]$DeepOnly = $false,
+        [int]$SafeMinAgeMinutes = 0,
+        [int]$DeepMinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @(),
         [string]$Description = ''
     )
 
@@ -309,7 +315,12 @@ function New-CleanupTargetDefinition {
         paths = @($Paths)
         risk = $Risk
         requiresConfirmation = $RequiresConfirmation
-        minAgeMinutes = $MinAgeMinutes
+        action = $Action
+        deepOnly = $DeepOnly
+        safeMinAgeMinutes = $SafeMinAgeMinutes
+        deepMinAgeMinutes = $DeepMinAgeMinutes
+        includePatterns = @($IncludePatterns)
+        excludePathSegments = @($ExcludePathSegments)
         description = $Description
     }
 }
@@ -334,42 +345,54 @@ function Get-WebSteamShaderCachePaths {
 function Get-CleanupTargetDefinitions {
     $local = $env:LOCALAPPDATA
     return @(
-        New-CleanupTargetDefinition -Id 'user-temp' -Label 'Temp nguoi dung' -DisplayPath '%TEMP%' -Paths @($env:TEMP) -Risk 'low' -RequiresConfirmation $false -MinAgeMinutes 60 -Description 'User temporary files'
-        New-CleanupTargetDefinition -Id 'windows-temp' -Label 'Windows Temp' -DisplayPath 'C:\Windows\Temp' -Paths @('C:\Windows\Temp') -Risk 'low' -RequiresConfirmation $false -MinAgeMinutes 60 -Description 'Windows temporary files'
+        New-CleanupTargetDefinition -Id 'user-temp' -Label 'Temp nguoi dung' -DisplayPath '%TEMP%' -Paths @($env:TEMP) -Risk 'low' -RequiresConfirmation $false -SafeMinAgeMinutes 1440 -DeepMinAgeMinutes 60 -Description 'User temporary files; safe mode preserves the newest 24 hours'
+        New-CleanupTargetDefinition -Id 'windows-temp' -Label 'Windows Temp' -DisplayPath 'C:\Windows\Temp' -Paths @('C:\Windows\Temp') -Risk 'low' -RequiresConfirmation $false -SafeMinAgeMinutes 1440 -DeepMinAgeMinutes 60 -Description 'Windows temporary files; safe mode preserves the newest 24 hours'
         New-CleanupTargetDefinition -Id 'directx-cache' -Label 'DirectX Shader Cache' -DisplayPath (Join-Path $local 'D3DSCache') -Paths @((Join-Path $local 'D3DSCache')) -Risk 'medium' -RequiresConfirmation $false -Description 'DirectX shader cache'
         New-CleanupTargetDefinition -Id 'nvidia-cache' -Label 'NVIDIA DXCache / GLCache / NV_Cache' -DisplayPath (Join-Path $local 'NVIDIA') -Paths @((Join-Path $local 'NVIDIA\DXCache'), (Join-Path $local 'NVIDIA\GLCache'), (Join-Path $local 'NVIDIA\NV_Cache')) -Risk 'medium' -RequiresConfirmation $false -Description 'NVIDIA shader caches'
         New-CleanupTargetDefinition -Id 'steam-cache' -Label 'Steam shader cache' -DisplayPath 'Steam shader cache' -Paths @(Get-WebSteamShaderCachePaths) -Risk 'medium' -RequiresConfirmation $false -Description 'Steam shader cache'
         New-CleanupTargetDefinition -Id 'crash-dumps' -Label 'Crash dumps' -DisplayPath (Join-Path $local 'CrashDumps') -Paths @((Join-Path $local 'CrashDumps')) -Risk 'high' -RequiresConfirmation $true -Description 'Application crash dump files'
         New-CleanupTargetDefinition -Id 'thumbnails' -Label 'Thumbnail cache' -DisplayPath (Join-Path $local 'Microsoft\Windows\Explorer') -Paths @((Join-Path $local 'Microsoft\Windows\Explorer')) -Risk 'low' -RequiresConfirmation $false -Description 'Windows thumbnail cache'
         New-CleanupTargetDefinition -Id 'inet-cache' -Label 'INetCache' -DisplayPath (Join-Path $local 'Microsoft\Windows\INetCache') -Paths @((Join-Path $local 'Microsoft\Windows\INetCache')) -Risk 'low' -RequiresConfirmation $false -Description 'Windows INetCache'
-        New-CleanupTargetDefinition -Id 'recycle-bin' -Label 'Recycle Bin' -DisplayPath 'Recycle Bin' -Paths @() -Risk 'high' -RequiresConfirmation $true -Description 'Windows Recycle Bin'
-        New-CleanupTargetDefinition -Id 'windows-update' -Label 'Windows Update cache' -DisplayPath 'C:\Windows\SoftwareDistribution\Download' -Paths @('C:\Windows\SoftwareDistribution\Download') -Risk 'medium' -RequiresConfirmation $true -Description 'Windows Update temporary download files'
+        New-CleanupTargetDefinition -Id 'recycle-bin' -Label 'Recycle Bin' -DisplayPath 'Recycle Bin' -Paths @() -Risk 'high' -RequiresConfirmation $true -Action 'recycle-bin' -Description 'Windows Recycle Bin'
+        New-CleanupTargetDefinition -Id 'component-store' -Label 'Windows Component Store' -DisplayPath 'DISM /StartComponentCleanup' -Paths @() -Risk 'medium' -RequiresConfirmation $true -Action 'component-store' -DeepOnly $true -Description 'Supported Windows component cleanup via DISM; ResetBase is never used'
+        New-CleanupTargetDefinition -Id 'delivery-optimization' -Label 'Delivery Optimization cache' -DisplayPath 'Windows Delivery Optimization cache' -Paths @() -Risk 'low' -RequiresConfirmation $false -Action 'delivery-optimization' -Description 'Supported Delivery Optimization cache cleanup; pinned files are preserved'
         New-CleanupTargetDefinition -Id 'windows-font-cache' -Label 'Windows Font Cache' -DisplayPath 'C:\Windows\ServiceProfiles\LocalService\AppData\Local\FontCache' -Paths @('C:\Windows\ServiceProfiles\LocalService\AppData\Local\FontCache') -Risk 'low' -RequiresConfirmation $false -Description 'Windows local font cache files'
-        New-CleanupTargetDefinition -Id 'windows-prefetch' -Label 'Windows Prefetch' -DisplayPath 'C:\Windows\Prefetch' -Paths @('C:\Windows\Prefetch') -Risk 'medium' -RequiresConfirmation $true -Description 'Windows application prefetch cache files'
-        New-CleanupTargetDefinition -Id 'windows-error-reports' -Label 'Windows Error Reports' -DisplayPath 'C:\ProgramData\Microsoft\Windows\WER' -Paths @('C:\ProgramData\Microsoft\Windows\WER') -Risk 'low' -RequiresConfirmation $false -Description 'Windows error report files'
+        New-CleanupTargetDefinition -Id 'windows-prefetch' -Label 'Windows Prefetch (old .pf only)' -DisplayPath 'C:\Windows\Prefetch\*.pf' -Paths @('C:\Windows\Prefetch') -Risk 'medium' -RequiresConfirmation $true -DeepOnly $true -SafeMinAgeMinutes 43200 -DeepMinAgeMinutes 43200 -IncludePatterns @('*.pf') -ExcludePathSegments @('ReadyBoot') -Description 'Optional deep cleanup of .pf files older than 30 days; ReadyBoot and Layout.ini are preserved'
+        New-CleanupTargetDefinition -Id 'windows-error-reports' -Label 'Windows Error Reports' -DisplayPath 'C:\ProgramData\Microsoft\Windows\WER' -Paths @('C:\ProgramData\Microsoft\Windows\WER') -Risk 'low' -RequiresConfirmation $false -SafeMinAgeMinutes 1440 -DeepMinAgeMinutes 60 -Description 'Windows error report files'
     )
 }
 
 function Get-PathSizeEstimate {
     param(
         [string]$Path,
-        [int]$MaxFiles = 500
+        [int]$MinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @(),
+        [int]$MaxFiles = 2000
     )
 
     if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
-        return [int64]0
+        return [pscustomobject]@{ bytes = [int64]0; fileCount = 0; complete = $true }
     }
 
     try {
-        $sum = (Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
-            Select-Object -First $MaxFiles |
-            Measure-Object -Property Length -Sum).Sum
-        if ($null -eq $sum) {
-            return [int64]0
+        if (-not (Test-SafeCleanupRoot -Path $Path)) {
+            return [pscustomobject]@{ bytes = [int64]0; fileCount = 0; complete = $false }
         }
-        return [int64]$sum
+
+        $normalizedRoot = Get-NormalizedCleanupPath -Path $Path
+        $candidates = @(Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { Test-CleanupFileEligible -FileInfo $_ -Root $normalizedRoot -MinAgeMinutes $MinAgeMinutes -IncludePatterns $IncludePatterns -ExcludePathSegments $ExcludePathSegments } |
+            Select-Object -First ($MaxFiles + 1))
+        $measured = @($candidates | Select-Object -First $MaxFiles)
+        $sum = ($measured | Measure-Object -Property Length -Sum).Sum
+        return [pscustomobject]@{
+            bytes = if ($null -eq $sum) { [int64]0 } else { [int64]$sum }
+            fileCount = $measured.Count
+            complete = $candidates.Count -le $MaxFiles
+        }
     } catch {
-        return [int64]0
+        return [pscustomobject]@{ bytes = [int64]0; fileCount = 0; complete = $false }
     }
 }
 
@@ -377,8 +400,16 @@ function Get-WebCleanupTargets {
     $targets = @()
     foreach ($target in Get-CleanupTargetDefinitions) {
         $estimated = [int64]0
+        $estimatedFileCount = 0
+        $estimateComplete = @($target.paths).Count -gt 0
+        $estimateMinAge = if ($target.deepOnly) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
         foreach ($path in @($target.paths)) {
-            $estimated += [int64](Get-PathSizeEstimate -Path $path)
+            $estimate = Get-PathSizeEstimate -Path $path -MinAgeMinutes $estimateMinAge -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments
+            $estimated += [int64]$estimate.bytes
+            $estimatedFileCount += [int]$estimate.fileCount
+            if (-not $estimate.complete) {
+                $estimateComplete = $false
+            }
         }
 
         $targets += [pscustomobject]@{
@@ -387,7 +418,15 @@ function Get-WebCleanupTargets {
             path = $target.path
             risk = $target.risk
             estimatedBytes = $estimated
+            estimatedFileCount = $estimatedFileCount
+            estimateComplete = [bool]$estimateComplete
             requiresConfirmation = [bool]$target.requiresConfirmation
+            action = $target.action
+            deepOnly = [bool]$target.deepOnly
+            safeMinAgeMinutes = [int]$target.safeMinAgeMinutes
+            deepMinAgeMinutes = [int]$target.deepMinAgeMinutes
+            includePatterns = @($target.includePatterns)
+            excludePathSegments = @($target.excludePathSegments)
             description = $target.description
         }
     }
@@ -723,7 +762,13 @@ function Get-WebBackgroundFunctionBootstrap {
         'Get-GameAdapter',
         'Get-SteamInstallPaths',
         'Get-SteamLibraryPaths',
+        'Get-NormalizedCleanupPath',
+        'Test-SafeCleanupRoot',
+        'Test-CleanupCandidatePath',
+        'Test-CleanupFileEligible',
         'Remove-FolderContents',
+        'Invoke-DeliveryOptimizationCleanup',
+        'Invoke-ComponentStoreCleanup',
         'New-NetBoostTimestamp',
         'Add-WebRecentLog',
         'Convert-WebEventPath',
@@ -1066,17 +1111,27 @@ function Invoke-WebCleanupJobWorker {
                 progress = [math]::Max(1, [math]::Round((($index - 1) / $selected.Count) * 100))
             }
 
-            if ($target.id -eq 'recycle-bin') {
-                Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin' -JobId $jobId
-                try {
-                    Clear-RecycleBin -Force -ErrorAction Stop
-                    Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed' -JobId $jobId
-                } catch {
-                    Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message -JobId $jobId
+            switch ($target.action) {
+                'recycle-bin' {
+                    Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin' -JobId $jobId
+                    try {
+                        Clear-RecycleBin -Force -ErrorAction Stop
+                        Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed' -JobId $jobId
+                    } catch {
+                        Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message -JobId $jobId
+                    }
                 }
-            } else {
-                foreach ($path in @($target.paths)) {
-                    Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $target.minAgeMinutes -TargetId $target.id -JobId $jobId
+                'delivery-optimization' {
+                    Invoke-DeliveryOptimizationCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
+                }
+                'component-store' {
+                    Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
+                }
+                default {
+                    $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
+                    foreach ($path in @($target.paths)) {
+                        Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $minAgeMinutes -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments -TargetId $target.id -JobId $jobId
+                    }
                 }
             }
         }
@@ -1097,9 +1152,18 @@ function Start-WebCleanupJob {
     )
 
     $definitions = @(Get-CleanupTargetDefinitions)
-    $selected = @($definitions | Where-Object { $TargetIds -contains $_.id })
+    $requestedIds = @($TargetIds | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Sort-Object -Unique)
+    $selected = @($definitions | Where-Object { $requestedIds -contains $_.id })
     if ($selected.Count -eq 0) {
         throw 'No supported cleanup targets selected.'
+    }
+    if ($selected.Count -ne $requestedIds.Count) {
+        throw 'One or more cleanup targets are unsupported.'
+    }
+
+    $deepOnlySelected = @($selected | Where-Object { $_.deepOnly })
+    if (-not $Deep -and $deepOnlySelected.Count -gt 0) {
+        throw ('Deep mode is required for: {0}' -f (($deepOnlySelected | ForEach-Object { $_.id }) -join ', '))
     }
 
     $requiresConfirm = $Deep -or @($selected | Where-Object { $_.requiresConfirmation }).Count -gt 0
@@ -1110,7 +1174,7 @@ function Start-WebCleanupJob {
     $job = New-WebJob -Kind 'cleanup'
     $payload = @{
         JobId = $job.jobId
-        TargetIds = @($TargetIds)
+        TargetIds = @($requestedIds)
         Deep = $Deep
     }
     Start-WebBackgroundTask -JobId $job.jobId -Payload $payload -ScriptBlock {

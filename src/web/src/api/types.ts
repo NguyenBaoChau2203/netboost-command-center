@@ -54,7 +54,15 @@ export interface CleanupTarget {
   label: string;
   path: string;
   risk: 'low' | 'medium' | 'high';
+  action: 'filesystem' | 'recycle-bin' | 'delivery-optimization' | 'component-store';
+  deepOnly: boolean;
+  safeMinAgeMinutes: number;
+  deepMinAgeMinutes: number;
+  includePatterns: string[];
+  excludePathSegments: string[];
   estimatedBytes: number;
+  estimatedFileCount: number;
+  estimateComplete: boolean;
   requiresConfirmation: boolean;
   description?: string;
 }

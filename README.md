@@ -43,13 +43,13 @@ Both modes share the **same PowerShell core engine** for DNS management, cache c
 - **Scheduled Auto-DNS Task** — optional, off by default, and created only after explicit confirmation; registers `NetBoost Auto DNS Optimizer` to run 30 seconds after Windows logon
 - **Flush DNS / Reset to DHCP** — clean slate in one keystroke
 
-### 🧹 Cache Cleanup (13 Targets)
-Safe, transparent, per-file deletion with automatic locked-file skipping:
+### 🧹 Cache Cleanup (14 Targets)
+Safe, transparent cleanup with bounded estimates, automatic locked-file skipping, and supported Windows maintenance actions:
 
 | # | Target ID | Path | Risk |
 |---|-----------|------|------|
-| 1 | `user-temp` | `%TEMP%` | Low |
-| 2 | `windows-temp` | `C:\Windows\Temp` | Low |
+| 1 | `user-temp` | `%TEMP%` — Safe: >24h, Deep: >1h | Low |
+| 2 | `windows-temp` | `C:\Windows\Temp` — Safe: >24h, Deep: >1h | Low |
 | 3 | `directx-cache` | `%LOCALAPPDATA%\D3DSCache` | Medium |
 | 4 | `nvidia-cache` | `%LOCALAPPDATA%\NVIDIA\DXCache/GLCache/NV_Cache` | Medium |
 | 5 | `steam-cache` | Steam `shadercache\730` (all libraries) | Medium |
@@ -57,12 +57,13 @@ Safe, transparent, per-file deletion with automatic locked-file skipping:
 | 7 | `thumbnails` | `%LOCALAPPDATA%\Microsoft\Windows\Explorer` | Low |
 | 8 | `inet-cache` | `%LOCALAPPDATA%\Microsoft\Windows\INetCache` | Low |
 | 9 | `recycle-bin` | Recycle Bin | High ⚠️ |
-| 10 | `windows-update` | `C:\Windows\SoftwareDistribution\Download` | Medium ⚠️ |
-| 11 | `windows-font-cache` | Windows Font Cache service directory | Low |
-| 12 | `windows-prefetch` | `C:\Windows\Prefetch` | Medium ⚠️ |
-| 13 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
+| 10 | `component-store` | DISM `/StartComponentCleanup` — Deep only | Medium ⚠️ |
+| 11 | `delivery-optimization` | Supported Delivery Optimization cmdlet | Low |
+| 12 | `windows-font-cache` | Windows Font Cache service directory | Low |
+| 13 | `windows-prefetch` | Only `*.pf` older than 30 days — Deep only | Medium ⚠️ |
+| 14 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
 
-> High-risk targets require explicit `y` confirmation before deletion. Locked files are automatically skipped — the tool never force-kills running applications.
+> Prefetch is visible but off by default. It requires Deep mode and confirmation; `ReadyBoot` and `Layout.ini` are never targeted. Raw deletion of `SoftwareDistribution\Download` is intentionally not used.
 
 ### 📊 Live Dashboard
 - Real-time adapter name, DNS servers, and connection status
@@ -269,7 +270,7 @@ NetBoost_Command_Center/
 │           └── views/
 │               ├── DashboardView.tsx    # Latency cards, cleanup summary, live logs
 │               ├── DnsView.tsx          # DNS adapter status + optimization actions
-│               ├── CleanupView.tsx      # 13-target cleanup with live job progress
+│               ├── CleanupView.tsx      # 14-target cleanup with live job progress
 │               ├── AutoTaskView.tsx     # Task Scheduler management + workflow diagram
 │               └── SettingsView.tsx     # Language, theme, security, logging settings
 │
@@ -367,7 +368,7 @@ All endpoints require the session cookie or `X-NetBoost-Token` header (except `G
 | `POST` | `/api/dns/provider` | `{ provider: "Google"\|"Cloudflare" }` | Force specific DNS provider |
 | `POST` | `/api/dns/flush` | — | Flush DNS client cache |
 | `POST` | `/api/dns/reset` | — | Reset DNS to DHCP/Auto |
-| `GET` | `/api/cleanup/targets` | — | 13 cleanup targets with size estimates |
+| `GET` | `/api/cleanup/targets` | — | 14 cleanup targets with bounded estimate metadata |
 | `POST` | `/api/cleanup/start` | `{ targets: string[], mode: "safe"\|"deep" }` | Start async cleanup job |
 | `GET` | `/api/cleanup/job/{id}` | — | Poll cleanup job progress + events |
 | `GET` | `/api/jobs/{id}` | — | Poll async job state |
@@ -404,10 +405,11 @@ NetBoost is designed around a strict **do-no-harm** philosophy:
 
 - ✅ **Never kills Display Drivers** or GPU processes
 - ✅ **Never force-closes user applications** — locked files are silently skipped
-- ✅ **Never modifies `package.json`** or deletes `node_modules` automatically
+- ✅ **Rejects drive roots, profile roots, Windows roots, path escapes, and reparse-point traversal** before file deletion
 - ✅ **Never uploads user files, local paths, logs, or settings**
 - ✅ **Never installs persistent services** — only one optional Task Scheduler entry after explicit user confirmation
-- ✅ **Requires explicit confirmation** for high-risk targets (Recycle Bin, Windows Update cache, Prefetch, Crash Dumps)
+- ✅ **Requires explicit confirmation** for risky targets (Recycle Bin, Component Store, Prefetch, Crash Dumps)
+- ✅ **Uses supported Windows actions** for Component Store and Delivery Optimization cleanup; never uses DISM `ResetBase`
 - ✅ **Never stops unrelated processes on port conflicts** — reports the occupied port instead of force-killing another app
 - ✅ **All server runspaces and owned dialog child processes terminate** when the CLI window is closed
 - ✅ **Local-first by design** — TCP server is bound exclusively to `127.0.0.1`, inaccessible from LAN or WAN

@@ -42,88 +42,176 @@ export const initialDashboard: DashboardResponse = {
   ]
 };
 
+const createCleanupTarget = (
+  target: Partial<CleanupTarget> & Pick<CleanupTarget, 'id' | 'label' | 'path' | 'risk' | 'estimatedBytes' | 'requiresConfirmation'>
+): CleanupTarget => ({
+  action: 'filesystem',
+  deepOnly: false,
+  safeMinAgeMinutes: 0,
+  deepMinAgeMinutes: 0,
+  includePatterns: ['*'],
+  excludePathSegments: [],
+  estimatedFileCount: 0,
+  estimateComplete: true,
+  ...target
+});
+
 export const allowedCleanupTargets: CleanupTarget[] = [
-  {
+  createCleanupTarget({
     id: "user-temp",
     label: "Temp người dùng",
     path: "%TEMP%",
     risk: "low",
     estimatedBytes: 1288490188, // ~1.2 GB
+    estimatedFileCount: 1820,
+    safeMinAgeMinutes: 1440,
+    deepMinAgeMinutes: 60,
     requiresConfirmation: false,
     description: "Tập tin tạm tạo bởi các ứng dụng (.tmp, .log)"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "windows-temp",
     label: "Windows Temp",
     path: "C:\\Windows\\Temp",
     risk: "low",
     estimatedBytes: 471859200, // ~450 MB
+    estimatedFileCount: 640,
+    safeMinAgeMinutes: 1440,
+    deepMinAgeMinutes: 60,
     requiresConfirmation: false,
     description: "Thư mục tạm của hệ thống Windows"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "directx-cache",
     label: "DirectX Shader Cache",
     path: "Shader cache đồ họa",
     risk: "medium",
     estimatedBytes: 2576980377, // ~2.4 GB
+    estimatedFileCount: 380,
     requiresConfirmation: false,
     description: "Bộ nhớ đệm shader đồ họa giúp giảm giật hình khi chơi game"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "nvidia-cache",
     label: "NVIDIA DXCache / GLCache",
     path: "NVIDIA shader cache files",
     risk: "medium",
     estimatedBytes: 933228544, // ~890 MB
+    estimatedFileCount: 210,
     requiresConfirmation: false,
     description: "Bộ nhớ đệm shader của driver đồ họa NVIDIA"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "steam-cache",
     label: "Steam shader cache",
     path: "Steam pre-compiled shaders",
     risk: "medium",
     estimatedBytes: 3435973836, // ~3.2 GB
+    estimatedFileCount: 420,
     requiresConfirmation: false,
     description: "Bộ nhớ đệm đồ họa được tải trước cho game Steam"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "crash-dumps",
     label: "Crash dumps",
     path: "Báo cáo lỗi hệ thống Windows",
     risk: "high",
     estimatedBytes: 5476083302, // ~5.1 GB
+    estimatedFileCount: 12,
     requiresConfirmation: true,
     description: "Các tập tin ghi lại bộ nhớ khi Windows hoặc ứng dụng bị lỗi"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "thumbnails",
     label: "Thumbnail cache",
     path: "Ảnh thu nhỏ của các tệp tin",
     risk: "low",
     estimatedBytes: 125829120, // ~120 MB
+    estimatedFileCount: 18,
     requiresConfirmation: false,
     description: "Ảnh thu nhỏ xem trước của thư mục hình ảnh, video"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "inet-cache",
     label: "INetCache",
     path: "Windows Internet Cache",
     risk: "low",
     estimatedBytes: 220200960, // ~210 MB
+    estimatedFileCount: 310,
     requiresConfirmation: false,
     description: "Bộ nhớ đệm tạm thời của Internet Explorer và Windows components"
-  },
-  {
+  }),
+  createCleanupTarget({
     id: "recycle-bin",
     label: "Recycle Bin",
     path: "Thùng rác hệ thống",
-    risk: "low",
+    risk: "high",
     estimatedBytes: 13743895347, // ~12.8 GB
+    estimatedFileCount: 84,
+    action: 'recycle-bin',
     requiresConfirmation: true,
     description: "Các tập tin đã xóa tạm thời đang chờ dọn sạch hoàn toàn"
-  }
+  }),
+  createCleanupTarget({
+    id: 'component-store',
+    label: 'Windows Component Store',
+    path: 'DISM /StartComponentCleanup',
+    risk: 'medium',
+    action: 'component-store',
+    deepOnly: true,
+    estimatedBytes: 0,
+    estimateComplete: false,
+    requiresConfirmation: true,
+    description: 'Dọn component cũ bằng DISM, không sử dụng ResetBase'
+  }),
+  createCleanupTarget({
+    id: 'delivery-optimization',
+    label: 'Delivery Optimization cache',
+    path: 'Windows Delivery Optimization cache',
+    risk: 'low',
+    action: 'delivery-optimization',
+    estimatedBytes: 0,
+    estimateComplete: false,
+    requiresConfirmation: false,
+    description: 'Dùng cmdlet Windows được hỗ trợ và giữ lại pinned files'
+  }),
+  createCleanupTarget({
+    id: 'windows-font-cache',
+    label: 'Windows Font Cache',
+    path: 'C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Local\\FontCache',
+    risk: 'low',
+    estimatedBytes: 83886080,
+    estimatedFileCount: 24,
+    requiresConfirmation: false,
+    description: 'Bộ nhớ đệm font cục bộ của Windows'
+  }),
+  createCleanupTarget({
+    id: 'windows-prefetch',
+    label: 'Windows Prefetch (old .pf only)',
+    path: 'C:\\Windows\\Prefetch\\*.pf',
+    risk: 'medium',
+    deepOnly: true,
+    safeMinAgeMinutes: 43200,
+    deepMinAgeMinutes: 43200,
+    includePatterns: ['*.pf'],
+    excludePathSegments: ['ReadyBoot'],
+    estimatedBytes: 314572800,
+    estimatedFileCount: 72,
+    requiresConfirmation: true,
+    description: 'Chỉ .pf cũ hơn 30 ngày; giữ ReadyBoot và Layout.ini'
+  }),
+  createCleanupTarget({
+    id: 'windows-error-reports',
+    label: 'Windows Error Reports',
+    path: 'C:\\ProgramData\\Microsoft\\Windows\\WER',
+    risk: 'low',
+    safeMinAgeMinutes: 1440,
+    deepMinAgeMinutes: 60,
+    estimatedBytes: 209715200,
+    estimatedFileCount: 48,
+    requiresConfirmation: false,
+    description: 'Báo cáo lỗi Windows cũ'
+  })
 ];
 
 export const initialSettings: SettingsState = {

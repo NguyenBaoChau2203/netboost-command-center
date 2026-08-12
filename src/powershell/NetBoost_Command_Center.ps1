@@ -730,16 +730,142 @@ function Open-ChrisTitus {
     Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://christitus.com/win | iex"' -Verb RunAs
 }
 
+function Get-NormalizedCleanupPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $null
+    }
+
+    try {
+        $fullPath = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Path))
+        return $fullPath.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    } catch {
+        return $null
+    }
+}
+
+function Test-SafeCleanupRoot {
+    param([string]$Path)
+
+    $fullPath = Get-NormalizedCleanupPath -Path $Path
+    if ([string]::IsNullOrWhiteSpace($fullPath) -or -not (Test-Path -LiteralPath $fullPath -PathType Container)) {
+        return $false
+    }
+
+    try {
+        $rootItem = Get-Item -LiteralPath $fullPath -Force -ErrorAction Stop
+        if (($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+
+    $driveRoot = Get-NormalizedCleanupPath -Path ([IO.Path]::GetPathRoot($fullPath))
+    if ([string]::Equals($fullPath, $driveRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    $protectedRoots = @($env:USERPROFILE, $env:WINDIR, $env:SystemRoot)
+    foreach ($protectedRoot in $protectedRoots) {
+        $normalizedProtectedRoot = Get-NormalizedCleanupPath -Path $protectedRoot
+        if (-not [string]::IsNullOrWhiteSpace($normalizedProtectedRoot) -and
+            [string]::Equals($fullPath, $normalizedProtectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+function Test-CleanupCandidatePath {
+    param(
+        [string]$Root,
+        [string]$Candidate
+    )
+
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Root
+    $normalizedCandidate = Get-NormalizedCleanupPath -Path $Candidate
+    if ([string]::IsNullOrWhiteSpace($normalizedRoot) -or [string]::IsNullOrWhiteSpace($normalizedCandidate)) {
+        return $false
+    }
+
+    $rootPrefix = $normalizedRoot + [IO.Path]::DirectorySeparatorChar
+    if (-not $normalizedCandidate.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    try {
+        $candidateItem = Get-Item -LiteralPath $normalizedCandidate -Force -ErrorAction Stop
+        $current = if ($candidateItem.PSIsContainer) { $candidateItem } else { $candidateItem.Directory }
+        while ($null -ne $current -and
+            -not [string]::Equals($current.FullName.TrimEnd('\'), $normalizedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            if (($current.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                return $false
+            }
+            $current = $current.Parent
+        }
+    } catch {
+        return $false
+    }
+
+    return $true
+}
+
+function Test-CleanupFileEligible {
+    param(
+        [IO.FileInfo]$FileInfo,
+        [string]$Root,
+        [int]$MinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @()
+    )
+
+    if ($null -eq $FileInfo -or
+        ($FileInfo.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        -not (Test-CleanupCandidatePath -Root $Root -Candidate $FileInfo.FullName)) {
+        return $false
+    }
+
+    if ($MinAgeMinutes -gt 0 -and $FileInfo.LastWriteTime -ge (Get-Date).AddMinutes(-$MinAgeMinutes)) {
+        return $false
+    }
+
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Root
+    $relativePath = $FileInfo.FullName.Substring($normalizedRoot.Length).TrimStart('\', '/')
+    $pathSegments = @($relativePath -split '[\\/]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    foreach ($excludedSegment in @($ExcludePathSegments)) {
+        if (-not [string]::IsNullOrWhiteSpace($excludedSegment) -and $pathSegments -contains $excludedSegment) {
+            return $false
+        }
+    }
+
+    $patterns = @($IncludePatterns | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($patterns.Count -eq 0) {
+        $patterns = @('*')
+    }
+
+    foreach ($pattern in $patterns) {
+        if ($FileInfo.Name -like $pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Remove-FolderContents {
     param(
         [string]$Path,
         [string]$Label,
         [int]$MinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @(),
         [string]$TargetId = '',
         [string]$JobId = ''
     )
 
-    Ensure-Admin
     $filesDeleted = 0
     $dirsDeleted = 0
     $filesFailed = 0
@@ -754,13 +880,17 @@ function Remove-FolderContents {
         return
     }
 
-    $cutoff = if ($MinAgeMinutes -gt 0) { (Get-Date).AddMinutes(-$MinAgeMinutes) } else { $null }
+    if (-not (Test-SafeCleanupRoot -Path $Path)) {
+        $message = "Unsafe cleanup root rejected: $Path"
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $Path -Message $message -JobId $JobId
+        throw $message
+    }
+
+    Ensure-Admin
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Path
 
     $files = Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object {
-            ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and
-            ($null -eq $cutoff -or $_.LastWriteTime -lt $cutoff)
-        }
+        Where-Object { Test-CleanupFileEligible -FileInfo $_ -Root $normalizedRoot -MinAgeMinutes $MinAgeMinutes -IncludePatterns $IncludePatterns -ExcludePathSegments $ExcludePathSegments }
     foreach ($file in $files) {
         try {
             $bytes = [int64]$file.Length
@@ -778,9 +908,17 @@ function Remove-FolderContents {
         }
     }
 
-    $dirs = Get-ChildItem -LiteralPath $Path -Force -Directory -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 } |
-        Sort-Object { $_.FullName.Length } -Descending
+    $removeEmptyDirs = @($IncludePatterns).Count -eq 1 -and $IncludePatterns[0] -eq '*'
+    $dirs = if ($removeEmptyDirs) {
+        @(Get-ChildItem -LiteralPath $Path -Force -Directory -Recurse -ErrorAction SilentlyContinue |
+            Where-Object {
+                ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and
+                (Test-CleanupCandidatePath -Root $normalizedRoot -Candidate $_.FullName)
+            } |
+            Sort-Object { $_.FullName.Length } -Descending)
+    } else {
+        @()
+    }
 
     foreach ($dir in $dirs) {
         $remaining = @(Get-ChildItem -LiteralPath $dir.FullName -Force -ErrorAction SilentlyContinue)
@@ -821,8 +959,8 @@ function Remove-FolderContents {
 }
 
 function Clean-Temp {
-    Remove-FolderContents -Path $env:TEMP -Label 'Temp cua nguoi dung' -MinAgeMinutes 60 -TargetId 'user-temp'
-    Remove-FolderContents -Path 'C:\Windows\Temp' -Label 'Windows Temp' -MinAgeMinutes 60 -TargetId 'windows-temp'
+    Remove-FolderContents -Path $env:TEMP -Label 'Temp cua nguoi dung' -MinAgeMinutes 1440 -TargetId 'user-temp'
+    Remove-FolderContents -Path 'C:\Windows\Temp' -Label 'Windows Temp' -MinAgeMinutes 1440 -TargetId 'windows-temp'
 }
 
 function Get-SteamInstallPaths {
@@ -930,10 +1068,55 @@ function Clean-Game {
     Clean-SteamShaderCache -AppId '730' -Label 'Steam shader cache CS2'
 }
 
+function Invoke-DeliveryOptimizationCleanup {
+    param(
+        [string]$TargetId = 'delivery-optimization',
+        [string]$TargetLabel = 'Delivery Optimization cache',
+        [string]$JobId = ''
+    )
+
+    Ensure-Admin
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Starting supported Delivery Optimization cache cleanup' -JobId $JobId
+
+    $command = Get-Command -Name Delete-DeliveryOptimizationCache -ErrorAction SilentlyContinue
+    if (-not $command) {
+        $message = 'Delete-DeliveryOptimizationCache is not available on this Windows installation.'
+        Write-Status Warning $message
+        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message $message -JobId $JobId
+        return
+    }
+
+    Delete-DeliveryOptimizationCache -Force -ErrorAction Stop
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Delivery Optimization cache cleanup completed; pinned files were preserved' -JobId $JobId
+}
+
+function Invoke-ComponentStoreCleanup {
+    param(
+        [string]$TargetId = 'component-store',
+        [string]$TargetLabel = 'Windows Component Store',
+        [string]$JobId = ''
+    )
+
+    Ensure-Admin
+    $dismPath = Join-Path $env:SystemRoot 'System32\dism.exe'
+    if (-not (Test-Path -LiteralPath $dismPath -PathType Leaf)) {
+        throw 'DISM was not found in the Windows System32 directory.'
+    }
+
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Starting supported Windows Component Store cleanup' -JobId $JobId
+    & $dismPath /Online /Cleanup-Image /StartComponentCleanup | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw ("DISM Component Store cleanup failed with exit code {0}." -f $LASTEXITCODE)
+    }
+
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Windows Component Store cleanup completed without ResetBase' -JobId $JobId
+}
+
 function Clean-System {
     Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'CrashDumps') -Label 'Crash dumps cua ung dung' -TargetId 'crash-dumps'
     Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer') -Label 'Thumbnail cache cua Windows' -TargetId 'thumbnails'
     Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\INetCache') -Label 'Web cache cua Windows INetCache' -TargetId 'inet-cache'
+    Invoke-DeliveryOptimizationCleanup
 }
 
 function Clean-RecycleBin {
