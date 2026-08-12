@@ -21,7 +21,6 @@ Prioritize:
 - Existing CLI flags still work.
 - Web backend binds to `127.0.0.1`.
 - No cloud/account/profile/plan/logout UI exists.
-- npm -> pnpm is report-only.
 - Cleanup targets match the approved target list.
 - Cleanup skips locked files and does not stop drivers or force-close apps.
 - Dangerous cleanup actions require confirmation.

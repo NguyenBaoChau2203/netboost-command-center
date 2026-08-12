@@ -160,20 +160,6 @@ Streams or returns log events.
 }
 ```
 
-## POST /api/npm/scan
-
-Body:
-
-```json
-{
-  "root": "D:\\Projects",
-  "maxDepth": 6,
-  "ignore": ["node_modules", ".git", "dist", "build"]
-}
-```
-
-Returns a job id. Scanner must be report-only.
-
 ## GET /api/tasks/auto-dns
 
 Returns scheduled task state.

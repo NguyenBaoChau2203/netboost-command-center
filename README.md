@@ -64,13 +64,6 @@ Safe, transparent, per-file deletion with automatic locked-file skipping:
 
 > High-risk targets require explicit `y` confirmation before deletion. Locked files are automatically skipped — the tool never force-kills running applications.
 
-### 📦 npm → pnpm Migration Scanner
-- Report-only scanner — **never deletes files, never modifies `package.json`**
-- Recursively finds Node.js projects up to a configurable depth (2/5/10 levels)
-- Detects `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, `node_modules/`, and `pnpm-lock.yaml`
-- Generates copyable `pnpm import` + `pnpm install` commands with per-project migration guidance
-- Scans up to 50,000 directories before warning to refine the scope
-
 ### 📊 Live Dashboard
 - Real-time adapter name, DNS servers, and connection status
 - Side-by-side latency comparison: Google vs. Cloudflare (ms)
@@ -144,25 +137,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
 
   TOOLS
   [14] Mo Chris Titus WinUtil
-  [15] Quet cac du an npm de chuyen sang pnpm
-  [16] Xem bang thong tin (Dashboard)
-  [17] Switch interface language to English
-  [18] Mo giao dien Web UI (trinh duyet local)
+  [15] Xem bang thong tin (Dashboard)
+  [16] Switch interface language to English
+  [17] Mo giao dien Web UI (trinh duyet local)
   [0 ] Thoat chuong trinh
 
 Chon muc (Select option):
 ```
 
-### 3 — Launch the Web UI (Option 18 or `--web`)
+### 3 — Launch the Web UI (Option 17 or `--web`)
 
-Select **`[18]`** from the menu, or run with the `--web` flag:
+Select **`[17]`** from the menu, or run with the `--web` flag:
 
 ```batch
 NetBoost_Command_Center.bat --web
 NetBoost_Command_Center.bat --web --port 47812
 ```
 
-When Option 18 is triggered:
+When Option 17 is triggered:
 1. **Port check** — NetBoost checks if port `47812` is occupied and refuses to stop unrelated local processes; close the other app or choose another port
 2. **TCP backend starts** — `Start-NetBoostTcpBackend` binds a `System.Net.Sockets.TcpListener` to `127.0.0.1:47812`
 3. **Browser opens** — `Start-Process http://127.0.0.1:47812/` launches your default browser
@@ -191,14 +183,13 @@ All flags are accepted by the `.bat` launcher and passed through to the PowerShe
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| *(none)* | | Interactive 18-option menu (default mode) |
+| *(none)* | | Interactive 17-option menu (default mode) |
 | `--auto-dns` | `-auto-dns`, `-AutoDns` | Non-interactive: run Auto DNS selection and exit |
 | `--google` | `-google` | Force Google DNS (8.8.8.8 / 8.8.4.4) and exit |
 | `--cloudflare` | `-cloudflare` | Force Cloudflare DNS (1.1.1.1 / 1.0.0.1) and exit |
 | `--reset-dns` | `-reset-dns`, `-ResetDns` | Reset DNS to DHCP/Auto and exit |
 | `--status` | `-status` | Show current DNS adapter status and exit |
 | `--dashboard` | `-dashboard` | Show telemetry dashboard and exit |
-| `--scan-npm <path>` | `-scan-npm`, `-ScanNpm` | Scan `<path>` for npm projects and exit |
 | `--web` | `-web` | Start local Web UI backend server |
 | `--port <number>` | `-port` | Set web server port (default: `47812`, range: 1–65535) |
 | `--lang en` | `-lang en` | Use English interface |
@@ -209,9 +200,6 @@ All flags are accepted by the `.bat` launcher and passed through to the PowerShe
 ```batch
 :: Run as a one-shot Auto DNS optimizer (e.g. in a scheduled task)
 NetBoost_Command_Center.bat --auto-dns --lang en
-
-:: Scan D:\Projects for npm migration candidates in English
-NetBoost_Command_Center.bat --scan-npm D:\Projects --lang en
 
 :: Start Web UI on a custom port
 NetBoost_Command_Center.bat --web --port 8080
@@ -277,12 +265,11 @@ NetBoost_Command_Center/
 │           │   ├── types.ts             # Shared TypeScript interfaces
 │           │   └── mockData.ts          # Dev-mode mock data
 │           ├── i18n/
-│           │   └── translations.ts      # 259 keys · Vietnamese + English
+│           │   └── translations.ts      # Vietnamese + English
 │           └── views/
-│               ├── DashboardView.tsx    # Latency cards, cleanup summary, npm teaser
+│               ├── DashboardView.tsx    # Latency cards, cleanup summary, live logs
 │               ├── DnsView.tsx          # DNS adapter status + optimization actions
 │               ├── CleanupView.tsx      # 13-target cleanup with live job progress
-│               ├── NpmPnpmView.tsx      # Migration scanner with per-project steps
 │               ├── AutoTaskView.tsx     # Task Scheduler management + workflow diagram
 │               └── SettingsView.tsx     # Language, theme, security, logging settings
 │
@@ -331,7 +318,6 @@ NetBoost_Command_Center/
           │   • GET  /api/cleanup/targets      │
           │   • POST /api/cleanup/start        │
           │   • GET  /api/cleanup/job/{id}     │
-          │   • POST /api/npm/scan             │
           │   • GET  /api/jobs/{id}            │
           │   • GET  /api/jobs/{id}/events     │
           │   • GET  /api/tasks/auto-dns       │
@@ -347,10 +333,10 @@ NetBoost_Command_Center/
           │   (pre-built in src/web/dist/)  │
           │                                 │
           │  Views: Dashboard · DNS         │
-          │         Cleanup · npm→pnpm      │
-          │         AutoTask · Settings     │
+          │         Cleanup · AutoTask      │
+          │         Settings                │
           │                                 │
-          │  i18n: 259 keys · VI + EN       │
+          │  i18n: Vietnamese + English     │
           │  Theme: Light / Dark / System   │
           └─────────────────────────────────┘
 ```
@@ -384,7 +370,6 @@ All endpoints require the session cookie or `X-NetBoost-Token` header (except `G
 | `GET` | `/api/cleanup/targets` | — | 13 cleanup targets with size estimates |
 | `POST` | `/api/cleanup/start` | `{ targets: string[], mode: "safe"\|"deep" }` | Start async cleanup job |
 | `GET` | `/api/cleanup/job/{id}` | — | Poll cleanup job progress + events |
-| `POST` | `/api/npm/scan` | `{ root, maxDepth, ignore }` | Start async npm scan job |
 | `GET` | `/api/jobs/{id}` | — | Poll async job state |
 | `GET` | `/api/jobs/{id}/events` | — | Poll capped live job events |
 | `GET` | `/api/tasks/auto-dns` | — | Auto-DNS scheduled task state |

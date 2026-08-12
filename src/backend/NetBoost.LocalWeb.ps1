@@ -721,7 +721,6 @@ function Get-WebBackgroundFunctionBootstrap {
         'Is-Admin',
         'Ensure-Admin',
         'Get-GameAdapter',
-        'Get-PathSize',
         'Get-SteamInstallPaths',
         'Get-SteamLibraryPaths',
         'Remove-FolderContents',
@@ -739,8 +738,6 @@ function Get-WebBackgroundFunctionBootstrap {
         'Invoke-WebDnsProvider',
         'Invoke-WebDnsJobWorker',
         'Invoke-WebCleanupJobWorker',
-        'Find-NpmProjectsForWeb',
-        'Invoke-WebNpmScanJobWorker',
         'Invoke-WebTaskActionWorker'
     )
 
@@ -1123,182 +1120,6 @@ function Start-WebCleanupJob {
     return $job
 }
 
-function Find-NpmProjectsForWeb {
-    param(
-        [string]$Root,
-        [int]$MaxDepth = 6,
-        [string[]]$Ignore = @('node_modules', '.git', 'dist', 'build')
-    )
-
-    $resolved = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
-    $ignoreSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    foreach ($name in @($Ignore + @('.hg', '.svn', '.pnpm', '.next', 'out', 'coverage', '.cache'))) {
-        if (-not [string]::IsNullOrWhiteSpace($name)) {
-            [void]$ignoreSet.Add($name)
-        }
-    }
-
-    $queue = New-Object 'System.Collections.Generic.Queue[object]'
-    $queue.Enqueue([pscustomobject]@{ Path = $resolved; Depth = 0 })
-    $projects = New-Object 'System.Collections.Generic.List[object]'
-    $scanned = 0
-    $maxDirs = 50000
-
-    while ($queue.Count -gt 0 -and $scanned -lt $maxDirs) {
-        $item = $queue.Dequeue()
-        $dir = $item.Path
-        $depth = [int]$item.Depth
-        $scanned++
-
-        $children = @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue)
-        $childNames = [System.Collections.Generic.HashSet[string]]::new(
-            [string[]]($children | ForEach-Object { $_.Name }),
-            [StringComparer]::OrdinalIgnoreCase
-        )
-
-        $hasPackageJson = $childNames.Contains('package.json')
-        $hasPackageLock = $childNames.Contains('package-lock.json')
-        $hasShrinkwrap = $childNames.Contains('npm-shrinkwrap.json')
-        $hasPnpmLock = $childNames.Contains('pnpm-lock.yaml')
-        $hasYarnLock = $childNames.Contains('yarn.lock')
-        $hasNodeModules = $childNames.Contains('node_modules')
-
-        if ($hasPackageJson -or $hasPackageLock -or $hasShrinkwrap -or $hasNodeModules) {
-            $lockfile = 'none'
-            if ($hasPackageLock) { $lockfile = 'package-lock.json' }
-            elseif ($hasShrinkwrap) { $lockfile = 'npm-shrinkwrap.json' }
-            elseif ($hasPnpmLock) { $lockfile = 'pnpm-lock.yaml' }
-            elseif ($hasYarnLock) { $lockfile = 'yarn.lock' }
-
-            $nodeModulesSize = [int64]0
-            $nodeModulesPath = Join-Path $dir 'node_modules'
-            if ($hasNodeModules) {
-                $size = Get-PathSize -Path $nodeModulesPath
-                if ($null -ne $size) {
-                    $nodeModulesSize = [int64]$size
-                }
-            }
-
-            $status = if ($hasPnpmLock) { 'completed' } else { 'ready' }
-            $recommendation = if ($hasPnpmLock) { 'Already uses pnpm lockfile' } else { 'Report-only: review pnpm import and pnpm install manually' }
-            $suggestions = if ($hasPnpmLock) { @() } else { @('pnpm import', 'pnpm install', 'npm run build') }
-
-            [void]$projects.Add([pscustomobject]@{
-                path = $dir
-                lockfile = $lockfile
-                nodeModulesSize = $nodeModulesSize
-                recommendation = $recommendation
-                status = $status
-                suggestions = $suggestions
-            })
-        }
-
-        if ($depth -ge $MaxDepth) {
-            continue
-        }
-
-        foreach ($child in $children) {
-            if (-not $child.PSIsContainer) {
-                continue
-            }
-            if ($ignoreSet.Contains($child.Name)) {
-                continue
-            }
-            if (($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                continue
-            }
-            $queue.Enqueue([pscustomobject]@{ Path = $child.FullName; Depth = ($depth + 1) })
-        }
-    }
-
-    return [pscustomobject]@{
-        root = $resolved
-        scanned = $scanned
-        hitLimit = ($scanned -ge $maxDirs)
-        projects = @($projects.ToArray())
-    }
-}
-
-function Invoke-WebNpmScanJobWorker {
-    param([hashtable]$Payload)
-
-    $jobId = [string]$Payload.JobId
-    $Root = [string]$Payload.Root
-    $MaxDepth = [int]$Payload.MaxDepth
-    $Ignore = @($Payload.Ignore | ForEach-Object { [string]$_ })
-    Update-WebJob -JobId $jobId -Values @{ status = 'running'; progress = 10; currentTarget = 'Scanning npm projects' }
-    Add-WebJobEvent -JobId $jobId -Event ([pscustomobject]@{
-        timestamp = New-NetBoostTimestamp
-        level = 'INFO'
-        message = ('Report-only npm -> pnpm scan started: {0}' -f $Root)
-    })
-
-    try {
-        $scan = Find-NpmProjectsForWeb -Root $Root -MaxDepth $MaxDepth -Ignore $Ignore
-        $projects = @($scan.projects)
-        $totalNodeModules = [int64]0
-        foreach ($project in $projects) {
-            $totalNodeModules += [int64]$project.nodeModulesSize
-            Add-WebJobEvent -JobId $jobId -Event ([pscustomobject]@{
-                timestamp = New-NetBoostTimestamp
-                level = 'FOUND'
-                path = $project.path
-                message = ('Found Node project: {0} ({1})' -f $project.path, $project.lockfile)
-            })
-        }
-
-        $packageLockCount = @($projects | Where-Object { $_.lockfile -eq 'package-lock.json' -or $_.lockfile -eq 'npm-shrinkwrap.json' }).Count
-        $expectedSavings = [int64]([math]::Round($totalNodeModules * 0.7))
-
-        Update-WebJob -JobId $jobId -Values @{
-            status = 'completed'
-            progress = 100
-            currentTarget = 'Completed'
-            projectsFound = $projects.Count
-            totalNodeModulesBytes = $totalNodeModules
-            packageLockCount = $packageLockCount
-            expectedSavingsBytes = $expectedSavings
-            projects = @($projects)
-            scannedFolders = $scan.scanned
-            hitLimit = $scan.hitLimit
-        }
-
-        Add-WebJobEvent -JobId $jobId -Event ([pscustomobject]@{
-            timestamp = New-NetBoostTimestamp
-            level = 'SUMMARY'
-            message = ('npm scan completed. projects={0}; reportOnly=true' -f $projects.Count)
-        })
-    } catch {
-        Add-WebJobEvent -JobId $jobId -Event ([pscustomobject]@{
-            timestamp = New-NetBoostTimestamp
-            level = 'ERROR'
-            message = $_.Exception.Message
-        })
-        Update-WebJob -JobId $jobId -Values @{ status = 'failed'; progress = 100; currentTarget = 'Failed' }
-    }
-}
-
-function Start-WebNpmScanJob {
-    param(
-        [string]$Root,
-        [int]$MaxDepth = 6,
-        [string[]]$Ignore = @('node_modules', '.git', 'dist', 'build')
-    )
-
-    $job = New-WebJob -Kind 'npm-scan'
-    $payload = @{
-        JobId = $job.jobId
-        Root = $Root
-        MaxDepth = $MaxDepth
-        Ignore = @($Ignore)
-    }
-    Start-WebBackgroundTask -JobId $job.jobId -Payload $payload -ScriptBlock {
-        param([hashtable]$Payload)
-        Invoke-WebNpmScanJobWorker -Payload $Payload
-    }
-    return $job
-}
-
 function Invoke-WebTaskActionWorker {
     param([hashtable]$Payload)
 
@@ -1658,25 +1479,6 @@ function Invoke-NetBoostApiRequest {
             } catch {
                 Send-ApiError -Context $Context -Message $_.Exception.Message -StatusCode 400
             }
-            return
-        }
-
-        if ($method -eq 'POST' -and $path -eq '/api/npm/scan') {
-            $body = Convert-RequestBody -Request $request
-            $root = [string]$body.root
-            if ([string]::IsNullOrWhiteSpace($root)) {
-                $root = $DefaultScanRoot
-            }
-            $maxDepth = 6
-            if ($body.maxDepth) {
-                $maxDepth = [int]$body.maxDepth
-            }
-            $ignore = @('node_modules', '.git', 'dist', 'build')
-            if ($body.ignore) {
-                $ignore = @($body.ignore | ForEach-Object { [string]$_ })
-            }
-            $job = Start-WebNpmScanJob -Root $root -MaxDepth $maxDepth -Ignore $ignore
-            Send-WebJson -Context $Context -Data ([ordered]@{ jobId = $job.jobId; status = $job.status })
             return
         }
 

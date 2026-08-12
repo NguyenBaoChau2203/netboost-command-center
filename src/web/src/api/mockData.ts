@@ -2,8 +2,7 @@ import type {
   HealthResponse,
   DashboardResponse,
   CleanupTarget,
-  SettingsState,
-  NpmProject
+  SettingsState
 } from './types';
 
 export const initialHealth: HealthResponse = {
@@ -140,53 +139,6 @@ export const initialSettings: SettingsState = {
   powershellScriptPath: ".\\NetBoost_Command_Center.ps1",
   launcherBatPath: ".\\NetBoost_Command_Center.bat"
 };
-
-export const mockProjects: NpmProject[] = [
-  {
-    path: "/client-app",
-    lockfile: "package-lock.json",
-    nodeModulesSize: 891289600, // ~850 MB
-    recommendation: "Có thể chuyển sang pnpm",
-    status: "ready",
-    suggestions: [
-      "pnpm import",
-      "pnpm install",
-      "npm run build"
-    ]
-  },
-  {
-    path: "/backend-api",
-    lockfile: "yarn.lock",
-    nodeModulesSize: 1288490188, // ~1.2 GB
-    recommendation: "Có thể chuyển sang pnpm",
-    status: "needs_config",
-    suggestions: [
-      "pnpm import",
-      "pnpm install",
-      "npm run build"
-    ]
-  },
-  {
-    path: "/landing-page",
-    lockfile: "package-lock.json",
-    nodeModulesSize: 440401920, // ~420 MB
-    recommendation: "Có thể chuyển sang pnpm",
-    status: "ready",
-    suggestions: [
-      "pnpm import",
-      "pnpm install",
-      "npm run build"
-    ]
-  },
-  {
-    path: "/internal-tool",
-    lockfile: "pnpm-lock.yaml",
-    nodeModulesSize: 157286400, // ~150 MB
-    recommendation: "Đã sử dụng pnpm",
-    status: "completed",
-    suggestions: []
-  }
-];
 
 export const mockPowerShellLogs = {
   cleanup: [

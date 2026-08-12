@@ -8,7 +8,6 @@
 - [x] F4: Build Dashboard screen using mock API data.
 - [x] F5: Build DNS screen and operation states.
 - [x] F6: Build Cleanup screen, warning panel, modal, live log, completed/locked states.
-- [x] F7: Build npm -> pnpm report-only screen.
 - [x] F8: Build Auto DNS task screen.
 - [x] F9: Build Settings screen.
 - [x] F10: Add typed API client matching `contracts/api.md`.

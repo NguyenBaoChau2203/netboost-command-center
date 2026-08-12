@@ -156,6 +156,9 @@ try {
         if ($bundle.Content.Contains('1.2.0')) {
             $releaseMismatches.Add("Static UI bundle still contains stale release marker '1.2.0'.")
         }
+        if ($bundle.Content.Contains('npm-pnpm')) {
+            $releaseMismatches.Add("Static UI bundle still exposes the removed npm-to-pnpm feature.")
+        }
     }
 
     Assert-True ($releaseMismatches.Count -eq 0) ("Release version mismatch: {0}" -f ($releaseMismatches -join ' '))
@@ -176,20 +179,11 @@ try {
         maxDepth = 2
         ignore = @('node_modules', '.git', 'dist', 'build')
     } | ConvertTo-Json -Compress
-    $scan = Invoke-RestMethod -Uri "$base/api/npm/scan" -Method Post -Headers $authHeaders -ContentType 'application/json' -Body $scanBody -TimeoutSec 20
-    Assert-True (-not [string]::IsNullOrWhiteSpace($scan.jobId)) 'npm scan did not return a jobId.'
-    $scanJob = $null
-    $scanEvents = @()
-    for ($i = 0; $i -lt 80; $i++) {
-        Start-Sleep -Milliseconds 250
-        $scanJob = Invoke-RestMethod -Uri "$base/api/jobs/$($scan.jobId)" -Method Get -Headers $authHeaders -TimeoutSec 5
-        $scanEvents = @((Invoke-RestMethod -Uri "$base/api/jobs/$($scan.jobId)/events" -Method Get -Headers $authHeaders -TimeoutSec 5) | ForEach-Object { $_ })
-        if ($scanJob.status -eq 'completed' -or $scanJob.status -eq 'failed') {
-            break
-        }
-    }
-    Assert-True ($scanJob.status -eq 'completed') 'npm scan job did not complete.'
-    Assert-True ($scanEvents.Count -gt 0) 'npm scan did not emit events.'
+    $removedNpmRoute = Invoke-RawHttpRequest -Method 'POST' -Path '/api/npm/scan' -Body $scanBody -Token $token
+    Assert-True ($removedNpmRoute.StatusCode -eq 404) 'Removed npm scan route did not return 404.'
+
+    $helpOutput = (& 'powershell.exe' -NoProfile -ExecutionPolicy Bypass -File $scriptPath '--help' 2>&1 | Out-String)
+    Assert-True (-not $helpOutput.Contains('--scan-npm')) 'CLI help still advertises the removed npm scan mode.'
 
     [pscustomobject]@{
         ok = $true
@@ -198,9 +192,8 @@ try {
         isAdmin = $health.isAdmin
         cleanupTargets = $actualIds.Count
         adminGuard = $adminGuardStatus
-        npmScanStatus = $scanJob.status
-        npmProjectsFound = $scanJob.projectsFound
-        npmEvents = $scanEvents.Count
+        npmScanRoute = 'removed'
+        npmScanCli = 'removed'
     } | ConvertTo-Json -Depth 6
 } finally {
     if ($proc -and -not $proc.HasExited) {

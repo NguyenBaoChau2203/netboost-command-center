@@ -7,7 +7,6 @@ $AppName = 'NetBoost Command Center'
 $TaskName = 'NetBoost Auto DNS Optimizer'
 $ScriptPath = $PSCommandPath
 $RawArgs = @($args)
-$DefaultScanRoot = $env:USERPROFILE
 $UseFancyUi = $false
 $UseAsciiUi = -not $UseFancyUi
 
@@ -53,10 +52,9 @@ if ($Language -eq 'EN') {
     $T.Menu12 = "Clean System cache"
     $T.Menu13 = "Empty Recycle Bin"
     $T.Menu14 = "Open Chris Titus WinUtil"
-    $T.Menu15 = "Scan npm projects for pnpm migration"
-    $T.Menu16 = "View telemetry Dashboard"
-    $T.Menu17 = "Switch interface language to Vietnamese"
-    $T.Menu18 = "Open Web UI (local browser)"
+    $T.Menu15 = "View telemetry Dashboard"
+    $T.Menu16 = "Switch interface language to Vietnamese"
+    $T.Menu17 = "Open Web UI (local browser)"
     $T.Menu0  = "Exit program"
 
     # Task Outputs & Alerts
@@ -108,30 +106,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin is empty or some items are locked."
 
     $T.DashHead       = "NETBOOST DASHBOARD"
-    $T.ScanHead       = "NPM TO PNPM MIGRATION SCAN"
-    $T.ScanInfo       = "This mode scans and reports only. No files are deleted."
-    $T.ScanNodeMissing = "Node : not found in PATH"
-    $T.ScanNpmMissing  = "npm  : not found in PATH"
-    $T.ScanPnpmMissing = "pnpm : not found in PATH"
-    $T.ScanGlobalRoot = "Global root"
-    $T.ScanCacheSize  = "Cache size"
-    $T.ScanGlobalHead = "NPM GLOBAL CONFIG"
-    $T.ScanGlobPack   = "NPM GLOBAL PACKAGES"
-    $T.ScanNoPack     = "No global packages found."
-    $T.ScanReadError  = "Failed to read npm global packages list."
-    $T.ScanProjRoot   = "PROJECT SCAN - Root: {0}"
-    $T.ScanProjNone   = "No Node/npm projects found in this root."
-    $T.ScanProjFound  = "Found: {0} Node-related projects/folders"
-    $T.ScanScanned    = "Folders scanned"
-    $T.ScanLimit      = "Warning: hit 50000 limit, please scan smaller paths."
-    $T.ScanMoreItems  = "... and {0} more items"
-
-    $T.MigrateHead    = "MIGRATION ADVICE"
-    $T.MigrateLock    = "Projects with package-lock/shrinkwrap"
-    $T.MigrateNm      = "Projects with node_modules"
-    $T.MigrateStep1   = "In each project folder: run 'pnpm import', then run 'pnpm install'."
-    $T.MigrateStep2   = "Global tools: reinstall using 'pnpm add -g <package-name>' when needed."
-    $T.MigrateStep3   = "Safe tip: only delete node_modules/package-lock manually after verifying builds."
     $T.WebStarting      = "Starting local Web UI backend server..."
     $T.WebRunning       = "NetBoost Command Center local backend is running."
     $T.WebBrowserOpen   = "Opening your default web browser..."
@@ -164,10 +138,9 @@ if ($Language -eq 'EN') {
     $T.Menu12 = "Don dep bo nho dem He thong"
     $T.Menu13 = "Lam trong Thung rac (Recycle Bin)"
     $T.Menu14 = "Mo Chris Titus WinUtil"
-    $T.Menu15 = "Quet cac du an npm de chuyen sang pnpm"
-    $T.Menu16 = "Xem bang thong tin (Dashboard)"
-    $T.Menu17 = "Switch interface language to English"
-    $T.Menu18 = "Mo giao dien Web UI (trinh duyet local)"
+    $T.Menu15 = "Xem bang thong tin (Dashboard)"
+    $T.Menu16 = "Switch interface language to English"
+    $T.Menu17 = "Mo giao dien Web UI (trinh duyet local)"
     $T.Menu0  = "Thoat chuong trinh"
 
     # Task Outputs & Alerts
@@ -219,30 +192,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin trong hoac co muc dang bi khoa."
 
     $T.DashHead       = "BANG THONG TIN (NETBOOST DASHBOARD)"
-    $T.ScanHead       = "QUET DU AN NPM SANG PNPM (NPM TO PNPM SCAN)"
-    $T.ScanInfo       = "Che do nay chi quet va bao cao, khong xoa file."
-    $T.ScanNodeMissing = "Node : chua tim thay trong PATH"
-    $T.ScanNpmMissing  = "npm  : chua tim thay trong PATH"
-    $T.ScanPnpmMissing = "pnpm : chua tim thay trong PATH"
-    $T.ScanGlobalRoot = "Global root"
-    $T.ScanCacheSize  = "Cache size"
-    $T.ScanGlobalHead = "CAU HINH NPM GLOBAL / CACHE"
-    $T.ScanGlobPack   = "THU VIEN NPM GLOBAL PACKAGES"
-    $T.ScanNoPack     = "Khong thay package global nao."
-    $T.ScanReadError  = "Khong doc duoc danh sach npm global packages."
-    $T.ScanProjRoot   = "QUET DU AN / PROJECT SCAN - Thu muc: {0}"
-    $T.ScanProjNone   = "Khong thay dau vet npm/project Node nao trong thu muc nay."
-    $T.ScanProjFound  = "Tim thay: {0} project/thu muc lien quan Node"
-    $T.ScanScanned    = "Da quet"
-    $T.ScanLimit      = "Canh bao: dat gioi han 50000 thu muc, nen quet tung thu muc nho hon."
-    $T.ScanMoreItems  = "... con {0} muc nua"
-
-    $T.MigrateHead    = "GOI Y CHUYEN DOI / MIGRATE ADVICE"
-    $T.MigrateLock    = "Project co package-lock/npm-shrinkwrap"
-    $T.MigrateNm      = "Project co node_modules"
-    $T.MigrateStep1   = "Trong tung project: chay 'pnpm import', sau do pnpm install."
-    $T.MigrateStep2   = "Global tool: cai lai bang pnpm add -g <ten-package> khi can."
-    $T.MigrateStep3   = "Sau khi test OK moi tu tay xoa node_modules/package-lock de giai phong dung luong."
     $T.WebStarting      = "Dang khoi dong server Web UI local..."
     $T.WebRunning       = "NetBoost Command Center local backend dang hoat dong."
     $T.WebBrowserOpen   = "Dang tu dong mo trinh duyet..."
@@ -329,7 +278,6 @@ function Get-UiIcon {
             'GameCache'    { return '[Game]' }
             'SysCache'     { return '[Sys]' }
             'WinUtil'      { return '[Tool]' }
-            'NpmScan'      { return '[Npm]' }
             'Dashboard'    { return '[Dash]' }
             'Web'          { return '[Web]' }
             'Exit'         { return '[Exit]' }
@@ -360,7 +308,6 @@ function Get-UiIcon {
             'GameCache'    { return '🎮' }
             'SysCache'     { return '⚙️' }
             'WinUtil'      { return '🛠️' }
-            'NpmScan'      { return '📦' }
             'Dashboard'    { return '📊' }
             'Web'          { return '🌐' }
             'Exit'         { return '🚪' }
@@ -1018,142 +965,6 @@ function Clean-All {
     Clean-RecycleBin
 }
 
-function Format-Bytes {
-    param([Nullable[double]]$Bytes)
-
-    if ($null -eq $Bytes) {
-        return $T.NotMeasurable
-    }
-
-    if ($Bytes -ge 1GB) {
-        return ('{0:N2} GB' -f ($Bytes / 1GB))
-    }
-
-    if ($Bytes -ge 1MB) {
-        return ('{0:N2} MB' -f ($Bytes / 1MB))
-    }
-
-    if ($Bytes -ge 1KB) {
-        return ('{0:N2} KB' -f ($Bytes / 1KB))
-    }
-
-    return ('{0:N0} B' -f $Bytes)
-}
-
-function Get-PathSize {
-    param([string]$Path)
-
-    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
-        return $null
-    }
-
-    try {
-        $sum = (Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
-            Measure-Object -Property Length -Sum).Sum
-
-        if ($null -eq $sum) {
-            return 0
-        }
-
-        return [double]$sum
-    } catch {
-        return $null
-    }
-}
-
-function Test-DirectChild {
-    param(
-        [string]$Base,
-        [string]$Name
-    )
-
-    return Test-Path -LiteralPath (Join-Path $Base $Name)
-}
-
-function Find-NpmProjects {
-    param(
-        [string]$Root,
-        [int]$MaxDirs = 50000
-    )
-
-    $resolved = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
-    $skipNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    @('node_modules', '.git', '.hg', '.svn', '.pnpm', '.next', 'dist', 'build', 'out', 'coverage', '.cache') |
-        ForEach-Object { [void]$skipNames.Add($_) }
-
-    $items = New-Object 'System.Collections.Generic.List[object]'
-    $stack = New-Object 'System.Collections.Generic.Stack[string]'
-    $stack.Push($resolved)
-    $scanned = 0
-
-    while ($stack.Count -gt 0 -and $scanned -lt $MaxDirs) {
-        $dir = $stack.Pop()
-        $scanned++
-
-        $allChildren = @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue)
-        $childNames = [System.Collections.Generic.HashSet[string]]::new(
-            [string[]]($allChildren | ForEach-Object { $_.Name }),
-            [StringComparer]::OrdinalIgnoreCase
-        )
-        $hasPackageJson = $childNames.Contains('package.json')
-        $hasPackageLock = $childNames.Contains('package-lock.json')
-        $hasShrinkwrap = $childNames.Contains('npm-shrinkwrap.json')
-        $hasPnpmLock = $childNames.Contains('pnpm-lock.yaml')
-        $hasYarnLock = $childNames.Contains('yarn.lock')
-        $hasNodeModules = $childNames.Contains('node_modules')
-
-        if ($hasPackageJson -or $hasPackageLock -or $hasShrinkwrap -or $hasNodeModules) {
-            [void]$items.Add([pscustomobject]@{
-                Path = $dir
-                PackageJson = $hasPackageJson
-                PackageLock = $hasPackageLock
-                Shrinkwrap = $hasShrinkwrap
-                PnpmLock = $hasPnpmLock
-                YarnLock = $hasYarnLock
-                NodeModules = $hasNodeModules
-            })
-        }
-
-        foreach ($child in $allChildren) {
-            if (-not $child.PSIsContainer) {
-                continue
-            }
-
-            if ($skipNames.Contains($child.Name)) {
-                continue
-            }
-
-            if (($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                continue
-            }
-
-            $stack.Push($child.FullName)
-        }
-    }
-
-    return [pscustomobject]@{
-        Root = $resolved
-        Items = @($items.ToArray())
-        Scanned = $scanned
-        HitLimit = ($scanned -ge $MaxDirs)
-    }
-}
-
-function Get-ToolVersionText {
-    param([string]$CommandName)
-
-    $cmd = Get-Command $CommandName -ErrorAction SilentlyContinue
-    if (-not $cmd) {
-        return 'missing'
-    }
-
-    try {
-        return (((& $cmd.Source --version 2>$null) -join '').Trim())
-    } catch {
-        return 'found'
-    }
-}
-
 function Get-TaskStatusText {
     try {
         $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
@@ -1197,125 +1008,14 @@ function Show-Dashboard {
     Write-CardLine 'Dns' $T.CardDns $dnsVal Green
 
     Write-CardLine 'Task' $T.CardTask (Get-TaskStatusText) Yellow
-    Write-CardLine 'Runtime' $T.CardRuntime ('node {0} | npm {1} | pnpm {2}' -f (Get-ToolVersionText 'node'), (Get-ToolVersionText 'npm'), (Get-ToolVersionText 'pnpm')) Magenta
+    $runtimeText = 'PowerShell {0} | Windows {1}' -f $PSVersionTable.PSVersion, [Environment]::OSVersion.Version
+    Write-CardLine 'Runtime' $T.CardRuntime $runtimeText Magenta
 
     if ($UseFancyUi) {
         Write-Line '════════════════════════════════════════════════════════════════════' Cyan
     } else {
         Write-Line '+--------------------------------------------------------------------+' Cyan
     }
-}
-
-function Show-NpmScan {
-    param([string]$Root = $DefaultScanRoot)
-
-    Write-UiHeader $T.ScanHead 'Scan'
-    Write-Status Info $T.ScanInfo
-    Write-Line ''
-
-    $node = Get-Command node -ErrorAction SilentlyContinue
-    $npm = Get-Command npm -ErrorAction SilentlyContinue
-    $pnpm = Get-Command pnpm -ErrorAction SilentlyContinue
-
-    Write-Line "  [$($T.CardRuntime.ToUpper())]" Cyan
-    if ($node) { Write-Line ("    " + (Get-UiIcon Runtime) + " Node : {0}" -f ((& $node.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanNodeMissing)" Yellow }
-    if ($npm) { Write-Line ("    " + (Get-UiIcon Runtime) + " npm  : {0}" -f ((& $npm.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanNpmMissing)" Yellow }
-    if ($pnpm) { Write-Line ("    " + (Get-UiIcon Runtime) + " pnpm : {0}" -f ((& $pnpm.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanPnpmMissing)" Yellow }
-
-    if ($npm) {
-        Write-Line ''
-        Write-Line "  [$($T.ScanGlobalHead)]" Cyan
-
-        $prefix = ((& $npm.Source config get prefix 2>$null) -join '').Trim()
-        $globalRoot = ((& $npm.Source root -g 2>$null) -join '').Trim()
-        $cache = ((& $npm.Source config get cache 2>$null) -join '').Trim()
-
-        Write-Line ("    Prefix     : {0}" -f $prefix) White
-        Write-Line ("    $($T.ScanGlobalRoot): {0}" -f $globalRoot) White
-        Write-Line ("    Cache      : {0}" -f $cache) White
-        Write-Line ("    $($T.ScanCacheSize) : {0}" -f (Format-Bytes (Get-PathSize -Path $cache))) White
-
-        Write-Line ''
-        Write-Line "  [$($T.ScanGlobPack)]" Cyan
-        try {
-            $json = ((& $npm.Source list -g --depth=0 --json 2>$null) -join "`n")
-            $globalInfo = $json | ConvertFrom-Json -ErrorAction Stop
-            $deps = @()
-
-            if ($globalInfo.dependencies) {
-                $deps = @($globalInfo.dependencies.PSObject.Properties | Sort-Object Name | ForEach-Object {
-                    [pscustomobject]@{
-                        Name = $_.Name
-                        Version = $_.Value.version
-                    }
-                })
-            }
-
-            if ($deps.Count -eq 0) {
-                Write-Line "    $($T.ScanNoPack)" Yellow
-            } else {
-                foreach ($dep in ($deps | Select-Object -First 80)) {
-                    Write-Line ("    - {0}@{1}" -f $dep.Name, $dep.Version) White
-                }
-
-                if ($deps.Count -gt 80) {
-                    Write-Line ("    " + ($T.ScanMoreItems -f ($deps.Count - 80))) Yellow
-                }
-            }
-        } catch {
-            Write-Line "    $($T.ScanReadError)" Yellow
-        }
-    }
-
-    Write-Line ''
-    Write-Line ("$($T.ScanProjRoot -f $Root)") Cyan
-
-    if (-not (Test-Path -LiteralPath $Root)) {
-        Write-Status Error $T.CleanFolderNotFound
-        return
-    }
-
-    $scan = Find-NpmProjects -Root $Root
-    $projects = @($scan.Items | Sort-Object Path)
-
-    Write-Line ("    $($T.ScanScanned) : {0} folders" -f $scan.Scanned) White
-    if ($scan.HitLimit) {
-        Write-Status Warning $T.ScanLimit
-    }
-
-    if ($projects.Count -eq 0) {
-        Write-Status Warning $T.ScanProjNone
-    } else {
-        Write-Line ("    $($T.ScanProjFound -f $projects.Count)") White
-        Write-Line ''
-        Write-Line '    Flags: pkg=package.json | lock=package-lock/npm-shrinkwrap | nm=node_modules | pnpm=pnpm-lock' DarkGray
-
-        foreach ($project in ($projects | Select-Object -First 120)) {
-            $flags = @()
-            if ($project.PackageJson) { $flags += 'pkg' }
-            if ($project.PackageLock -or $project.Shrinkwrap) { $flags += 'lock' }
-            if ($project.NodeModules) { $flags += 'nm' }
-            if ($project.PnpmLock) { $flags += 'pnpm' }
-            if ($project.YarnLock) { $flags += 'yarn' }
-
-            Write-Line ("    [{0,-18}] {1}" -f ($flags -join ','), $project.Path) White
-        }
-
-        if ($projects.Count -gt 120) {
-            Write-Line ("    " + ($T.ScanMoreItems -f ($projects.Count - 120))) Yellow
-        }
-    }
-
-    $npmLockProjects = @($projects | Where-Object { $_.PackageLock -or $_.Shrinkwrap })
-    $nodeModulesProjects = @($projects | Where-Object { $_.NodeModules })
-
-    Write-Line ''
-    Write-Line "[$($T.MigrateHead)]" Cyan
-    Write-Line ("  " + (Get-UiIcon Arrow) + " $($T.MigrateLock): {0}" -f $npmLockProjects.Count) White
-    Write-Line ("  " + (Get-UiIcon Arrow) + " $($T.MigrateNm): {0}" -f $nodeModulesProjects.Count) White
-    Write-Line ("  " + (Get-UiIcon Bullet) + " $($T.MigrateStep1)") Green
-    Write-Line ("  " + (Get-UiIcon Bullet) + " $($T.MigrateStep2)") Green
-    Write-Line ("  " + (Get-UiIcon Warning) + " $($T.MigrateStep3)") Yellow
 }
 
 function Show-Help {
@@ -1330,7 +1030,6 @@ function Show-Help {
     Write-Line '  NetBoost_Command_Center.bat --reset-dns' Green
     Write-Line '  NetBoost_Command_Center.bat --status' Green
     Write-Line '  NetBoost_Command_Center.bat --dashboard' Green
-    Write-Line '  NetBoost_Command_Center.bat --scan-npm D:\Code' Green
     Write-Line '  NetBoost_Command_Center.bat --web --port 47812' Green
     Write-Line '  NetBoost_Command_Center.bat --lang en' Green
     Write-Line '  NetBoost_Command_Center.bat --lang vi' Green
@@ -1372,10 +1071,9 @@ function Show-Menu {
 
         Write-Section 'Tools' Blue
         Write-MenuItem '14' $T.Menu14 Cyan 'WinUtil'
-        Write-MenuItem '15' $T.Menu15 Cyan 'NpmScan'
-        Write-MenuItem '16' $T.Menu16 Cyan 'Dashboard'
-        Write-MenuItem '17' $T.Menu17 Cyan 'Tools'
-        Write-MenuItem '18' $T.Menu18 Green 'Web'
+        Write-MenuItem '15' $T.Menu15 Cyan 'Dashboard'
+        Write-MenuItem '16' $T.Menu16 Cyan 'Tools'
+        Write-MenuItem '17' $T.Menu17 Green 'Web'
         Write-MenuItem '0' $T.Menu0 Red 'Exit'
         Write-Line ''
 
@@ -1397,15 +1095,9 @@ function Show-Menu {
                 '12' { Clean-System; Pause-Back }
                 '13' { Clean-RecycleBin; Pause-Back }
                 '14' { Open-ChrisTitus; Pause-Back }
-                '15' {
-                    $root = Read-UiInput ("$($T.ScanProjRoot -f $DefaultScanRoot) (Enter = $DefaultScanRoot)")
-                    if ([string]::IsNullOrWhiteSpace($root)) { $root = $DefaultScanRoot }
-                    Show-NpmScan -Root $root
-                    Pause-Back
-                }
-                '16' { Show-Dashboard; Pause-Back }
-                '17' { Switch-UiLanguage }
-                '18' {
+                '15' { Show-Dashboard; Pause-Back }
+                '16' { Switch-UiLanguage }
+                '17' {
                     $webPort = 47812
                     if (Get-Command Start-NetBoostWebBackend -ErrorAction SilentlyContinue) {
                         Start-NetBoostWebBackend -Port $webPort
@@ -1427,7 +1119,6 @@ function Show-Menu {
 
 function Parse-Args {
     $mode = 'Menu'
-    $scanRoot = $DefaultScanRoot
     $webPort = 47812
 
     for ($i = 0; $i -lt $RawArgs.Count; $i++) {
@@ -1469,27 +1160,6 @@ function Parse-Args {
             '-status' { $mode = 'Status' }
             '--dashboard' { $mode = 'Dashboard' }
             '-dashboard' { $mode = 'Dashboard' }
-            '--scan-npm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
-            '-scannpm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
-            '-scan-npm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
             '--help' { $mode = 'Help' }
             '-help' { $mode = 'Help' }
             '/?' { $mode = 'Help' }
@@ -1498,7 +1168,6 @@ function Parse-Args {
 
     return [pscustomobject]@{
         Mode = $mode
-        ScanRoot = $scanRoot
         WebPort = $webPort
     }
 }
@@ -1514,7 +1183,6 @@ switch ($parsed.Mode) {
     'Help' { Show-Help }
     'Status' { Show-DnsStatus }
     'Dashboard' { Show-Dashboard }
-    'NpmScan' { Show-NpmScan -Root $parsed.ScanRoot }
     'AutoDns' { Invoke-AutoDns }
     'Google' { Set-DnsProvider -ProviderName Google }
     'Cloudflare' { Set-DnsProvider -ProviderName Cloudflare }

@@ -18,7 +18,6 @@ Review priorities:
 - Does the backend bind locally and avoid cloud/account/telemetry behavior?
 - Are privileged actions and destructive cleanup protected by confirmation/admin checks?
 - Does cleanup skip locked files without force-closing apps or stopping services?
-- Is npm -> pnpm scanner report-only?
 - Does frontend copy avoid unsupported claims?
 - Do frontend data shapes match the API contract?
 - Are test/smoke results sufficient for the changed surface?

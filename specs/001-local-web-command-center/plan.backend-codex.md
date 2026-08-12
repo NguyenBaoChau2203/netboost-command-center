@@ -46,7 +46,6 @@ Fallback:
   - `--google`
   - `--cloudflare`
   - `--reset-dns`
-  - `--scan-npm <path>`
   - `--lang en|vi`
 
 ### B2 - Extract Machine-Readable Operations
