@@ -68,7 +68,17 @@ function Assert-True {
 }
 
 $scriptPath = Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'
-$proc = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$scriptPath`"", '--web', '--port', "$Port") -WorkingDirectory $repoRoot -WindowStyle Hidden -PassThru
+$startInfo = New-Object System.Diagnostics.ProcessStartInfo
+$startInfo.FileName = 'powershell.exe'
+$startInfo.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" --web --port {1}' -f $scriptPath.Replace('"', '\"'), $Port
+$startInfo.WorkingDirectory = $repoRoot
+$startInfo.UseShellExecute = $false
+$startInfo.CreateNoWindow = $true
+$proc = New-Object System.Diagnostics.Process
+$proc.StartInfo = $startInfo
+if (-not $proc.Start()) {
+    throw 'Failed to start the local backend process.'
+}
 
 try {
     $base = "http://127.0.0.1:$Port"
