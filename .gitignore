@@ -1,0 +1,17 @@
+.playwright-cli/
+.codegraph/
+.gitnexus/
+.history-backup/
+.superpowers/
+.stitch_review*/
+.specify/
+src/backend/settings.local.json
+build/
+node_modules/
+.env
+.env.*
+*.log
+*.tmp
+*.temp
+Thumbs.db
+Desktop.ini
