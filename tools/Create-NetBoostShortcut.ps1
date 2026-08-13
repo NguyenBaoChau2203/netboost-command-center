@@ -12,7 +12,13 @@ if ($Desktop -and -not [string]::IsNullOrWhiteSpace($ShortcutPath)) {
 }
 
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
-$launcherPath = Join-Path $repoRoot 'NetBoost_Command_Center.bat'
+$exeLauncherPath = Join-Path $repoRoot 'NetBoost Command Center.exe'
+$batchLauncherPath = Join-Path $repoRoot 'NetBoost_Command_Center.bat'
+$launcherPath = if (Test-Path -LiteralPath $exeLauncherPath -PathType Leaf) {
+    $exeLauncherPath
+} else {
+    $batchLauncherPath
+}
 $iconPath = Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.ico'
 
 if (-not (Test-Path -LiteralPath $launcherPath -PathType Leaf)) {

@@ -28,7 +28,7 @@
 
 | Mode | Interface | Entry Point | Description |
 |------|-----------|-------------|-------------|
-| **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 17-option interactive menu, fully ASCII-safe |
+| **CLI** | Terminal (CMD/PowerShell) | `NetBoost Command Center.exe` (`.bat` fallback) | 17-option interactive menu, fully ASCII-safe |
 | **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[17]` | React/Vite SPA served by a pure PowerShell TCP backend |
 
 Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
@@ -95,9 +95,15 @@ The Windows Update sequence follows Microsoft's documented troubleshooting workf
 - Windows PowerShell 5.1 (built-in, no additional install needed)
 - Modern browser (for Web UI mode only)
 
-### Mochi Cat branded shortcut
+### Mochi Cat EXE launcher and branded shortcut
 
-Windows batch files cannot embed a custom icon. NetBoost therefore keeps `NetBoost_Command_Center.bat` as the canonical launcher and provides a Windows shortcut that points to the same BAT file while displaying the Mochi Cat icon.
+Windows batch files cannot embed a custom icon. The release ZIP therefore includes `NetBoost Command Center.exe`, a small launcher with the Mochi Cat icon embedded. It opens the CLI by default, requests Administrator permission through UAC, and forwards every existing flag such as `--web` or `--dashboard`. `NetBoost_Command_Center.bat` remains available as a fallback.
+
+When working from a source checkout, build or refresh the ignored local EXE with:
+
+```powershell
+.\tools\Build-NetBoostLauncher.ps1
+```
 
 Create or refresh `NetBoost Command Center.lnk` in the project root:
 
@@ -111,28 +117,22 @@ Create the branded shortcut on the current user's desktop instead:
 .\tools\Create-NetBoostShortcut.ps1 -Desktop
 ```
 
-The generated `.lnk` is machine-specific and ignored by Git. The committed brand files are:
+The shortcut targets the EXE when it is present and falls back to the BAT otherwise. The generated `.lnk` is machine-specific and ignored by Git. The committed brand files are:
 
 - `assets/brand/netboost-mochi-cat.png` — approved high-fidelity 1254×1254 canonical artwork
 - `assets/brand/netboost-mochi-cat.ico` — Windows icon derived from the canonical PNG, with 16–256 px layers
 
 ### 1 — Launch the CLI (Auto-Elevation)
 
-Simply **double-click** `NetBoost_Command_Center.bat`.
+After extracting the release ZIP, simply **double-click** `NetBoost Command Center.exe`. Use `NetBoost_Command_Center.bat` only as a fallback.
 
-The launcher automatically detects whether it is running with Administrator privileges. If not, it calls `Start-Process … -Verb RunAs` to trigger a standard Windows UAC dialog and re-launches itself elevated. The original non-elevated window closes immediately — no "Run as Administrator" right-click required.
+The EXE automatically detects whether it is running with Administrator privileges. If not, it relaunches itself with the Windows `runas` verb, preserving every command-line argument. No "Run as Administrator" right-click is required.
 
-```batch
-@echo off
-net session >nul 2>&1
-if %errorLevel% == 0 (
-    goto :Elevated
-) else (
-    powershell.exe -NoProfile -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
-    exit /b 0
-)
-:Elevated
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\NetBoost_Command_Center.ps1" %*
+The open-source EXE is not digitally code-signed, so Windows SmartScreen may identify it as an unknown publisher. Verify the downloaded ZIP with the accompanying `.sha256` file, or use the BAT fallback if your device policy blocks unsigned executables.
+
+```powershell
+& '.\NetBoost Command Center.exe'
+& '.\NetBoost Command Center.exe' --web
 ```
 
 ### 2 — Use the CLI Menu
@@ -182,9 +182,9 @@ The CLI and Web UI use the same cleanup target definitions, path guards, retenti
 
 Select **`[17]`** from the menu, or run with the `--web` flag:
 
-```batch
-NetBoost_Command_Center.bat --web
-NetBoost_Command_Center.bat --web --port 47812
+```powershell
+& '.\NetBoost Command Center.exe' --web
+& '.\NetBoost Command Center.exe' --web --port 47812
 ```
 
 When Option 17 is triggered:
@@ -212,7 +212,7 @@ When Option 17 is triggered:
 
 ## 💻 CLI Reference
 
-All flags are accepted by the `.bat` launcher and passed through to the PowerShell script.
+All flags are accepted by both the EXE and BAT launchers and passed through to the PowerShell script.
 
 | Flag | Alias | Description |
 |------|-------|-------------|
@@ -230,12 +230,12 @@ All flags are accepted by the `.bat` launcher and passed through to the PowerShe
 | `--help` | `-help`, `/?` | Show usage reference and exit |
 
 **Examples:**
-```batch
-:: Run as a one-shot Auto DNS optimizer (e.g. in a scheduled task)
-NetBoost_Command_Center.bat --auto-dns --lang en
+```powershell
+# Run as a one-shot Auto DNS optimizer (e.g. in a scheduled task)
+& '.\NetBoost Command Center.exe' --auto-dns --lang en
 
-:: Start Web UI on a custom port
-NetBoost_Command_Center.bat --web --port 8080
+# Start Web UI on a custom port
+& '.\NetBoost Command Center.exe' --web --port 8080
 ```
 
 ---
@@ -262,14 +262,20 @@ In Fancy mode the same icons used in the Web UI are echoed in the terminal (🌐
 ```
 NetBoost_Command_Center/
 │
-├── NetBoost_Command_Center.bat          # Launcher: auto-elevation + PS1 entry point
+├── NetBoost Command Center.exe          # Generated/release launcher with embedded Mochi Cat icon
+├── NetBoost_Command_Center.bat          # Fallback launcher: auto-elevation + PS1 entry point
 ├── assets/brand/                        # Canonical Mochi Cat PNG and Windows ICO
-├── tools/Create-NetBoostShortcut.ps1    # Creates a branded .lnk to the BAT launcher
+├── tools/Build-NetBoostLauncher.ps1     # Compiles the local EXE with the embedded icon
+├── tools/Build-NetBoostRelease.ps1      # Builds the portable ZIP and SHA-256 file
+├── tools/Create-NetBoostShortcut.ps1    # Creates an EXE-first branded Windows shortcut
 ├── LICENSE                              # MIT License
 ├── README.md                            # This file
 ├── .gitignore
 │
 ├── src/
+│   ├── launcher/
+│   │   └── NetBoost.Launcher.cs          # UAC, safe argument forwarding, PowerShell startup
+│   │
 │   ├── powershell/
 │   │   └── NetBoost_Command_Center.ps1  # CLI core: menu, DNS, cleanup
 │   │                                    # 1 532 lines · #Requires -Version 5.1
@@ -322,10 +328,10 @@ NetBoost_Command_Center/
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   NetBoost_Command_Center.bat                   │
-│         (Auto-UAC elevation via Start-Process -Verb RunAs)      │
+│ NetBoost Command Center.exe (recommended) / .bat (fallback)     │
+│              (Auto-UAC + safe argument forwarding)              │
 └──────────────────────────────┬──────────────────────────────────┘
-                               │  passes %* args
+                               │  passes all args
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │           src/powershell/NetBoost_Command_Center.ps1            │
@@ -477,8 +483,8 @@ The backend is a single dot-sourced script requiring no install steps. It uses o
 - `System.Collections.ArrayList` (Synchronized) — thread-safe event log queue
 
 To test the backend in isolation:
-```batch
-NetBoost_Command_Center.bat --web --port 47812
+```powershell
+& '.\NetBoost Command Center.exe' --web --port 47812
 ```
 
 ---
@@ -489,6 +495,7 @@ NetBoost_Command_Center.bat --web --port 47812
 |-----------|----------------|-------|
 | Windows | 10 (1903+) / 11 | Required for `Get-NetTCPConnection`, `Get-NetAdapter`, `Get-NetRoute` |
 | Windows PowerShell | **5.1** | Ships with all supported Windows versions; no PowerShell 7 needed |
+| .NET Framework | Windows built-in 4.x | Used only by the small EXE launcher; no separate runtime installation needed |
 | Node.js + pnpm | Current LTS / pnpm 10+ (optional) | Only required for Web UI development / rebuilding the frontend |
 | Administrator rights | Required for DNS ops | Auto-elevated via UAC on first launch |
 
