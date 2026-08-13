@@ -113,6 +113,43 @@ if ($Language -eq 'EN') {
     $T.WebKeepOpen      = "Keep this command prompt window open while using the Web UI."
     $T.WebAccessAt      = "You can access the Web UI at: {0}"
     $T.WebPressToStop   = "Press Q or ESC to stop the Web UI and return to the main CLI menu."
+
+    $T.CliCleanupTitle = "CLI CLEANUP CENTER"
+    $T.CliCleanupSafe = "SAFE CLEANUP"
+    $T.CliCleanupConfirmed = "CONFIRMATION REQUIRED"
+    $T.CliCleanupAdvanced = "ADVANCED CLEANUP"
+    $T.CliCleanupBack = "Back to main menu"
+    $T.CliCleanupScope = "Scope"
+    $T.CliCleanupRisk = "Risk"
+    $T.CliCleanupRetention = "Retention"
+    $T.CliCleanupRiskLow = "Low"
+    $T.CliCleanupRiskMedium = "Medium"
+    $T.CliCleanupRiskHigh = "High"
+    $T.CliCleanupRetentionPolicy = "Per-target safe policy"
+    $T.CliCleanupRetention24Hours = "Preserves files newer than 24 hours"
+    $T.CliCleanupRetention30Days = "Preserves .pf files newer than 30 days"
+    $T.CliCleanupNoAgeRule = "No age filter; target-specific supported action"
+    $T.CliCleanupYesPrompt = "Continue? Enter y to confirm (y/n)"
+    $T.CliCleanupAdvancedPrompt = "Type CONFIRM exactly to continue"
+    $T.CliCleanupFailed = "Cleanup action failed"
+    $T.CliCleanupAction1 = "User & Windows Temp files (>24 hours)"
+    $T.CliCleanupAction2 = "Game & Graphics caches"
+    $T.CliCleanupAction3 = "Basic Windows caches"
+    $T.CliCleanupAction4 = "Run recommended safe cleanup"
+    $T.CliCleanupAction5 = "Application crash dumps"
+    $T.CliCleanupAction6 = "Empty Recycle Bin"
+    $T.CliCleanupAction7 = "Windows Component Store (DISM)"
+    $T.CliCleanupAction8 = "Windows Update downloads"
+    $T.CliCleanupAction9 = "Old Windows Prefetch files (.pf >30 days)"
+    $T.CliCleanupDescription1 = "Deletes only User and Windows temporary files older than 24 hours."
+    $T.CliCleanupDescription2 = "Deletes rebuildable DirectX, NVIDIA, and discovered Steam shader caches."
+    $T.CliCleanupDescription3 = "Deletes thumbnails, INetCache, Delivery Optimization, Font Cache, and old Windows Error Reports."
+    $T.CliCleanupDescription4 = "Runs actions 1, 2, and 3 only; excludes Recycle Bin, crash dumps, and every advanced target."
+    $T.CliCleanupDescription5 = "Removes application crash evidence; keep it when diagnosing a crash."
+    $T.CliCleanupDescription6 = "Permanently removes the current contents of Windows Recycle Bin."
+    $T.CliCleanupDescription7 = "Uses DISM /StartComponentCleanup; ResetBase is never used."
+    $T.CliCleanupDescription8 = "Clears only SoftwareDistribution\Download and restores the original Windows Update service states."
+    $T.CliCleanupDescription9 = "Deletes only .pf files older than 30 days; ReadyBoot and Layout.ini are preserved."
 } else {
     # Default: VI (Vietnamese without accents)
     $T.HeaderSubtitle = "Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 16."
@@ -199,6 +236,43 @@ if ($Language -eq 'EN') {
     $T.WebKeepOpen      = "Giu nguyen cua so nay (command prompt) khi dang dung Web UI."
     $T.WebAccessAt      = "Ban co the truy cap Web UI tai: {0}"
     $T.WebPressToStop   = "Nhan phim Q hoac ESC de dung Web UI va quay lai menu."
+
+    $T.CliCleanupTitle = "TRUNG TAM DON DEP CLI"
+    $T.CliCleanupSafe = "DON DEP AN TOAN"
+    $T.CliCleanupConfirmed = "CAN XAC NHAN"
+    $T.CliCleanupAdvanced = "DON DEP NANG CAO"
+    $T.CliCleanupBack = "Quay lai menu chinh"
+    $T.CliCleanupScope = "Pham vi"
+    $T.CliCleanupRisk = "Muc do rui ro"
+    $T.CliCleanupRetention = "Quy tac luu giu"
+    $T.CliCleanupRiskLow = "Thap"
+    $T.CliCleanupRiskMedium = "Trung binh"
+    $T.CliCleanupRiskHigh = "Cao"
+    $T.CliCleanupRetentionPolicy = "Theo chinh sach an toan cua tung muc"
+    $T.CliCleanupRetention24Hours = "Giu lai tep moi hon 24 gio"
+    $T.CliCleanupRetention30Days = "Giu lai tep .pf moi hon 30 ngay"
+    $T.CliCleanupNoAgeRule = "Khong loc theo tuoi tep; dung tac vu Windows duoc ho tro"
+    $T.CliCleanupYesPrompt = "Tiep tuc? Nhap y de xac nhan (y/n)"
+    $T.CliCleanupAdvancedPrompt = "Nhap chinh xac CONFIRM de tiep tuc"
+    $T.CliCleanupFailed = "Tac vu don dep that bai"
+    $T.CliCleanupAction1 = "Tep tam Nguoi dung & Windows (>24 gio)"
+    $T.CliCleanupAction2 = "Cache Game & Do hoa"
+    $T.CliCleanupAction3 = "Cache Windows co ban"
+    $T.CliCleanupAction4 = "Chay nhom don dep an toan de xuat"
+    $T.CliCleanupAction5 = "Crash dumps cua ung dung"
+    $T.CliCleanupAction6 = "Lam trong Thung rac"
+    $T.CliCleanupAction7 = "Windows Component Store (DISM)"
+    $T.CliCleanupAction8 = "Windows Update downloads"
+    $T.CliCleanupAction9 = "Windows Prefetch cu (.pf >30 ngay)"
+    $T.CliCleanupDescription1 = "Chi xoa tep tam Nguoi dung va Windows cu hon 24 gio."
+    $T.CliCleanupDescription2 = "Xoa cache shader DirectX, NVIDIA va Steam da tim thay; Windows/Game co the tao lai."
+    $T.CliCleanupDescription3 = "Xoa thumbnail, INetCache, Delivery Optimization, Font Cache va bao cao loi Windows cu."
+    $T.CliCleanupDescription4 = "Chi chay muc 1, 2 va 3; khong gom Thung rac, crash dumps hay bat ky muc nang cao nao."
+    $T.CliCleanupDescription5 = "Xoa du lieu chan doan loi ung dung; nen giu lai khi dang dieu tra crash."
+    $T.CliCleanupDescription6 = "Xoa vinh vien noi dung hien tai trong Thung rac Windows."
+    $T.CliCleanupDescription7 = "Dung DISM /StartComponentCleanup; khong bao gio dung ResetBase."
+    $T.CliCleanupDescription8 = "Chi don SoftwareDistribution\Download va khoi phuc trang thai dich vu Windows Update ban dau."
+    $T.CliCleanupDescription9 = "Chi xoa tep .pf cu hon 30 ngay; giu nguyen ReadyBoot va Layout.ini."
 }
 
 $Providers = @{
@@ -956,6 +1030,134 @@ function Remove-FolderContents {
     }
 
     Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $Label -Path $Path -Message ("FilesDeleted={0};DirsDeleted={1};SkippedOrFailedFiles={2};SkippedOrFailedDirs={3}" -f $filesDeleted, $dirsDeleted, $filesFailed, $dirsFailed) -JobId $JobId
+}
+
+function Get-CliCleanupActionDefinitions {
+    return @(
+        [pscustomobject]@{ key = '1'; section = 'safe'; label = $T.CliCleanupAction1; description = $T.CliCleanupDescription1; targetIds = @('user-temp', 'windows-temp'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskLow; retention = $T.CliCleanupRetention24Hours }
+        [pscustomobject]@{ key = '2'; section = 'safe'; label = $T.CliCleanupAction2; description = $T.CliCleanupDescription2; targetIds = @('directx-cache', 'nvidia-cache', 'steam-cache'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '3'; section = 'safe'; label = $T.CliCleanupAction3; description = $T.CliCleanupDescription3; targetIds = @('thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskLow; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '4'; section = 'safe'; label = $T.CliCleanupAction4; description = $T.CliCleanupDescription4; targetIds = @('user-temp', 'windows-temp', 'directx-cache', 'nvidia-cache', 'steam-cache', 'thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '5'; section = 'confirmed'; label = $T.CliCleanupAction5; description = $T.CliCleanupDescription5; targetIds = @('crash-dumps'); deep = $false; confirmation = 'y'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '6'; section = 'confirmed'; label = $T.CliCleanupAction6; description = $T.CliCleanupDescription6; targetIds = @('recycle-bin'); deep = $false; confirmation = 'y'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '7'; section = 'advanced'; label = $T.CliCleanupAction7; description = $T.CliCleanupDescription7; targetIds = @('component-store'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '8'; section = 'advanced'; label = $T.CliCleanupAction8; description = $T.CliCleanupDescription8; targetIds = @('windows-update-downloads'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '9'; section = 'advanced'; label = $T.CliCleanupAction9; description = $T.CliCleanupDescription9; targetIds = @('windows-prefetch'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetention30Days }
+    )
+}
+
+function Write-CliCleanupActionDetails {
+    param([pscustomobject]$Action)
+
+    Write-UiHeader $Action.label 'Cleanup'
+    Write-Line $Action.description Gray
+    Write-Line ''
+    Write-Line ("{0}:" -f $T.CliCleanupScope) Cyan
+
+    $definitions = @(Get-CleanupTargetDefinitions)
+    foreach ($targetId in @($Action.targetIds)) {
+        $target = $definitions | Where-Object { $_.id -eq $targetId } | Select-Object -First 1
+        if ($null -ne $target) {
+            Write-Line ("  - {0}: {1}" -f $target.label, $target.path) Gray
+        }
+    }
+
+    Write-Line ("{0}: {1}" -f $T.CliCleanupRisk, $Action.risk) Yellow
+    Write-Line ("{0}: {1}" -f $T.CliCleanupRetention, $Action.retention) DarkGray
+    Write-Line ''
+}
+
+function Invoke-CliCleanupSelection {
+    param(
+        [string]$Choice,
+        [scriptblock]$ReadInput = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    if ($Choice -eq '0') {
+        return 'back'
+    }
+
+    $action = Get-CliCleanupActionDefinitions | Where-Object { $_.key -eq $Choice } | Select-Object -First 1
+    if ($null -eq $action) {
+        return 'invalid'
+    }
+
+    Write-CliCleanupActionDetails -Action $action
+    $confirmed = $false
+    switch ($action.confirmation) {
+        'y' {
+            $answer = [string](& $ReadInput $T.CliCleanupYesPrompt)
+            if ($answer.ToLowerInvariant() -ne 'y') {
+                Write-Status Warning $T.ActionSkipped
+                return 'cancelled'
+            }
+            $confirmed = $true
+        }
+        'CONFIRM' {
+            $answer = [string](& $ReadInput $T.CliCleanupAdvancedPrompt)
+            if ($answer -cne 'CONFIRM') {
+                Write-Status Warning $T.ActionSkipped
+                return 'cancelled'
+            }
+            $confirmed = $true
+        }
+    }
+
+    & $CleanupInvoker ([string[]]$action.targetIds) ([bool]$action.deep) $confirmed | Out-Null
+    return 'completed'
+}
+
+function Show-CleanupCenter {
+    param(
+        [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        },
+        [scriptblock]$PauseAction = { Pause-Back }
+    )
+
+    while ($true) {
+        Write-Header
+        Write-UiHeader $T.CliCleanupTitle 'Cleanup'
+        $actions = @(Get-CliCleanupActionDefinitions)
+
+        Write-Section $T.CliCleanupSafe Green
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'safe' })) {
+            Write-MenuItem $action.key $action.label Green 'Safe'
+        }
+
+        Write-Section $T.CliCleanupConfirmed Yellow
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'confirmed' })) {
+            Write-MenuItem $action.key $action.label Yellow 'Confirm'
+        }
+
+        Write-Section $T.CliCleanupAdvanced Red
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'advanced' })) {
+            Write-MenuItem $action.key $action.label Red 'Advanced'
+        }
+        Write-MenuItem '0' $T.CliCleanupBack Cyan 'Back'
+        Write-Line ''
+
+        $choice = [string](& $InputReader $T.PromptChoice)
+        try {
+            $result = Invoke-CliCleanupSelection -Choice $choice -ReadInput $InputReader -CleanupInvoker $CleanupInvoker
+            if ($result -eq 'back') {
+                return
+            }
+            if ($result -eq 'invalid') {
+                Write-Status Error $T.InvalidChoice
+            }
+        } catch {
+            Write-Status Error ("{0}: {1}" -f $T.CliCleanupFailed, $_.Exception.Message)
+        }
+
+        & $PauseAction
+    }
 }
 
 function Clean-Temp {
