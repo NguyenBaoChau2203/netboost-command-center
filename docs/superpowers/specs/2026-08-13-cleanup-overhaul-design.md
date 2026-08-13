@@ -1,7 +1,7 @@
 # NetBoost Cleanup Overhaul Design
 
-**Date:** 2026-08-13  
-**Status:** Approved  
+**Date:** 2026-08-13
+**Status:** Approved
 **Version constraint:** Keep the product version at `1.0.1`.
 
 ## Scope

@@ -1,7 +1,7 @@
 # NetBoost CLI Cleanup Center Design
 
-**Date:** 2026-08-13  
-**Status:** Approved in conversation  
+**Date:** 2026-08-13
+**Status:** Approved in conversation
 **Version constraint:** Keep the product version at `1.0.1`.
 
 ## Goal
