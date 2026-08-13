@@ -206,6 +206,59 @@ try {
     }
     Assert-True $unsupportedTargetRejected 'An unsupported cleanup target must be rejected before a job starts.'
 
+    Assert-True ($null -ne (Get-Command Resolve-CleanupTargetSelection -ErrorAction SilentlyContinue)) 'Shared cleanup selection validation is missing.'
+    Assert-True ($null -ne (Get-Command Invoke-CleanupTargetSet -ErrorAction SilentlyContinue)) 'Shared synchronous cleanup dispatcher is missing.'
+
+    $safeTargets = @(Resolve-CleanupTargetSelection `
+        -TargetIds @('user-temp', 'windows-temp') `
+        -Deep $false `
+        -Confirmed $false)
+    Assert-True (($safeTargets.id -join ',') -eq 'user-temp,windows-temp') 'Safe targets must resolve in canonical definition order.'
+
+    $confirmationRejected = $false
+    try {
+        Resolve-CleanupTargetSelection -TargetIds @('recycle-bin') -Deep $false -Confirmed $false | Out-Null
+    } catch {
+        $confirmationRejected = $_.Exception.Message -like 'Confirmation is required*'
+    }
+    Assert-True $confirmationRejected 'Confirmation-required targets must be rejected before dispatch.'
+
+    $script:webWorkerDispatch = $null
+    function Update-WebJob {
+        param([string]$JobId, [hashtable]$Values)
+    }
+    function Write-CleanupEvent {
+        param($Level, $TargetId, $TargetLabel, $Path, $Bytes, $Message, $JobId)
+    }
+    function Invoke-CleanupTargetSet {
+        param(
+            [string[]]$TargetIds,
+            [bool]$Deep,
+            [bool]$Confirmed,
+            [string]$JobId = '',
+            [scriptblock]$OnTargetStart = $null
+        )
+
+        $script:webWorkerDispatch = [pscustomobject]@{
+            targetIds = @($TargetIds)
+            deep = $Deep
+            confirmed = $Confirmed
+            jobId = $JobId
+        }
+        if ($null -ne $OnTargetStart) {
+            & $OnTargetStart ([pscustomobject]@{ label = 'Fixture target' }) 1 1
+        }
+    }
+
+    Invoke-WebCleanupJobWorker -Payload @{
+        JobId = 'fixture-job'
+        TargetIds = @('fixture-target')
+        Deep = $false
+    }
+    Assert-True (($script:webWorkerDispatch.targetIds -join ',') -eq 'fixture-target') 'The Web worker must forward requested target IDs to the shared dispatcher.'
+    Assert-True (-not $script:webWorkerDispatch.deep -and $script:webWorkerDispatch.confirmed) 'The Web worker must preserve safe mode after HTTP confirmation.'
+    Assert-True ($script:webWorkerDispatch.jobId -eq 'fixture-job') 'The Web worker must preserve the cleanup job ID.'
+
     [pscustomobject]@{
         ok = $true
         rootGuard = 'verified'
@@ -214,6 +267,7 @@ try {
         deepOnlyGuard = 'verified'
         windowsUpdateServiceTransaction = 'verified'
         supportedTargetGuard = 'verified'
+        sharedDispatcher = 'verified'
     } | ConvertTo-Json
 } finally {
     Remove-Item -LiteralPath $sandboxRoot -Recurse -Force -ErrorAction SilentlyContinue

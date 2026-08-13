@@ -782,6 +782,8 @@ function Get-WebBackgroundFunctionBootstrap {
         'New-CleanupTargetDefinition',
         'Get-WebSteamShaderCachePaths',
         'Get-CleanupTargetDefinitions',
+        'Resolve-CleanupTargetSelection',
+        'Invoke-CleanupTargetSet',
         'Measure-WebLatency',
         'Invoke-WebDnsProvider',
         'Invoke-WebDnsJobWorker',
@@ -1093,64 +1095,7 @@ function Start-WebDnsJob {
     return $job
 }
 
-function Invoke-WebCleanupJobWorker {
-    param([hashtable]$Payload)
-
-    $jobId = [string]$Payload.JobId
-    $TargetIds = @($Payload.TargetIds | ForEach-Object { [string]$_ })
-    $Deep = [bool]$Payload.Deep
-    $definitions = @(Get-CleanupTargetDefinitions)
-    $selected = @($definitions | Where-Object { $TargetIds -contains $_.id })
-
-    try {
-        Update-WebJob -JobId $jobId -Values @{ status = 'running'; progress = 0; currentTarget = 'Starting cleanup' }
-        Write-CleanupEvent -Level INFO -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message ('Cleanup job started. deep={0}; targets={1}' -f $Deep, ($TargetIds -join ',')) -JobId $jobId
-
-        $index = 0
-        foreach ($target in $selected) {
-            $index++
-            Update-WebJob -JobId $jobId -Values @{
-                currentTarget = $target.label
-                progress = [math]::Max(1, [math]::Round((($index - 1) / $selected.Count) * 100))
-            }
-
-            switch ($target.action) {
-                'recycle-bin' {
-                    Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin' -JobId $jobId
-                    try {
-                        Clear-RecycleBin -Force -ErrorAction Stop
-                        Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed' -JobId $jobId
-                    } catch {
-                        Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message -JobId $jobId
-                    }
-                }
-                'delivery-optimization' {
-                    Invoke-DeliveryOptimizationCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
-                }
-                'component-store' {
-                    Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
-                }
-                'windows-update-downloads' {
-                    Invoke-WindowsUpdateDownloadCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
-                }
-                default {
-                    $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
-                    foreach ($path in @($target.paths)) {
-                        Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $minAgeMinutes -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments -TargetId $target.id -JobId $jobId
-                    }
-                }
-            }
-        }
-
-        Write-CleanupEvent -Level SUMMARY -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message 'Cleanup job completed' -JobId $jobId
-        Update-WebJob -JobId $jobId -Values @{ status = 'completed'; progress = 100; currentTarget = 'Completed' }
-    } catch {
-        Write-CleanupEvent -Level ERROR -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message $_.Exception.Message -JobId $jobId
-        Update-WebJob -JobId $jobId -Values @{ status = 'failed'; progress = 100; currentTarget = 'Failed' }
-    }
-}
-
-function Start-WebCleanupJob {
+function Resolve-CleanupTargetSelection {
     param(
         [string[]]$TargetIds,
         [bool]$Deep,
@@ -1176,6 +1121,94 @@ function Start-WebCleanupJob {
     if ($requiresConfirm -and -not $Confirmed) {
         throw 'Confirmation is required for selected cleanup targets.'
     }
+
+    return $selected
+}
+
+function Invoke-CleanupTargetSet {
+    param(
+        [string[]]$TargetIds,
+        [bool]$Deep,
+        [bool]$Confirmed,
+        [string]$JobId = '',
+        [scriptblock]$OnTargetStart = $null
+    )
+
+    $selected = @(Resolve-CleanupTargetSelection -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed)
+    $index = 0
+    foreach ($target in $selected) {
+        $index++
+        if ($null -ne $OnTargetStart) {
+            & $OnTargetStart $target $index $selected.Count
+        }
+
+        switch ($target.action) {
+            'recycle-bin' {
+                Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin' -JobId $JobId
+                try {
+                    Clear-RecycleBin -Force -ErrorAction Stop
+                    Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed' -JobId $JobId
+                } catch {
+                    Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message -JobId $JobId
+                }
+            }
+            'delivery-optimization' {
+                Invoke-DeliveryOptimizationCleanup -TargetId $target.id -TargetLabel $target.label -JobId $JobId
+            }
+            'component-store' {
+                Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label -JobId $JobId
+            }
+            'windows-update-downloads' {
+                Invoke-WindowsUpdateDownloadCleanup -TargetId $target.id -TargetLabel $target.label -JobId $JobId
+            }
+            default {
+                $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
+                foreach ($path in @($target.paths)) {
+                    Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $minAgeMinutes -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments -TargetId $target.id -JobId $JobId
+                }
+            }
+        }
+    }
+}
+
+function Invoke-WebCleanupJobWorker {
+    param([hashtable]$Payload)
+
+    $jobId = [string]$Payload.JobId
+    $targetIds = @($Payload.TargetIds | ForEach-Object { [string]$_ })
+    $deep = [bool]$Payload.Deep
+
+    try {
+        Update-WebJob -JobId $jobId -Values @{ status = 'running'; progress = 0; currentTarget = 'Starting cleanup' }
+        Write-CleanupEvent -Level INFO -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message ('Cleanup job started. deep={0}; targets={1}' -f $deep, ($targetIds -join ',')) -JobId $jobId
+
+        $onTargetStart = {
+            param($Target, [int]$Index, [int]$Total)
+            Update-WebJob -JobId $jobId -Values @{
+                currentTarget = $Target.label
+                progress = [math]::Max(1, [math]::Round((($Index - 1) / $Total) * 100))
+            }
+        }.GetNewClosure()
+
+        Invoke-CleanupTargetSet -TargetIds $targetIds -Deep $deep -Confirmed $true -JobId $jobId -OnTargetStart $onTargetStart
+
+        Write-CleanupEvent -Level SUMMARY -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message 'Cleanup job completed' -JobId $jobId
+        Update-WebJob -JobId $jobId -Values @{ status = 'completed'; progress = 100; currentTarget = 'Completed' }
+    } catch {
+        Write-CleanupEvent -Level ERROR -TargetId 'cleanup' -TargetLabel 'Cleanup' -Message $_.Exception.Message -JobId $jobId
+        Update-WebJob -JobId $jobId -Values @{ status = 'failed'; progress = 100; currentTarget = 'Failed' }
+    }
+}
+
+function Start-WebCleanupJob {
+    param(
+        [string[]]$TargetIds,
+        [bool]$Deep,
+        [bool]$Confirmed
+    )
+
+    $selected = @(Resolve-CleanupTargetSelection -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed)
+    $requestedIds = @($selected | ForEach-Object { [string]$_.id })
 
     $job = New-WebJob -Kind 'cleanup'
     $payload = @{
