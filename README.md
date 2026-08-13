@@ -95,6 +95,28 @@ The Windows Update sequence follows Microsoft's documented troubleshooting workf
 - Windows PowerShell 5.1 (built-in, no additional install needed)
 - Modern browser (for Web UI mode only)
 
+### Mochi Cat branded shortcut
+
+Windows batch files cannot embed a custom icon. NetBoost therefore keeps `NetBoost_Command_Center.bat` as the canonical launcher and provides a Windows shortcut that points to the same BAT file while displaying the Mochi Cat icon.
+
+Create or refresh `NetBoost Command Center.lnk` in the project root:
+
+```powershell
+.\tools\Create-NetBoostShortcut.ps1
+```
+
+Create the branded shortcut on the current user's desktop instead:
+
+```powershell
+.\tools\Create-NetBoostShortcut.ps1 -Desktop
+```
+
+The generated `.lnk` is machine-specific and ignored by Git. The committed brand files are:
+
+- `assets/brand/netboost-mochi-cat.svg` — editable vector source
+- `assets/brand/netboost-mochi-cat.png` — 1024×1024 preview/export
+- `assets/brand/netboost-mochi-cat.ico` — Windows icon with 16–256 px layers
+
 ### 1 — Launch the CLI (Auto-Elevation)
 
 Simply **double-click** `NetBoost_Command_Center.bat`.
@@ -234,6 +256,8 @@ In Fancy mode the same icons used in the Web UI are echoed in the terminal (🌐
 NetBoost_Command_Center/
 │
 ├── NetBoost_Command_Center.bat          # Launcher: auto-elevation + PS1 entry point
+├── assets/brand/                        # Mochi Cat SVG, PNG, and Windows ICO
+├── tools/Create-NetBoostShortcut.ps1    # Creates a branded .lnk to the BAT launcher
 ├── LICENSE                              # MIT License
 ├── README.md                            # This file
 ├── .gitignore
