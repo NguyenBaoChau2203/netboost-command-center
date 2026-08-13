@@ -62,8 +62,36 @@ try {
 }
 Assert-True $confirmationRejected 'Confirmation-required targets must be rejected before dispatch.'
 
-$backendSource = Get-Content -Raw -LiteralPath (Join-Path $repoRoot 'src\backend\NetBoost.LocalWeb.ps1')
-Assert-True ($backendSource -match 'function\s+Invoke-WebCleanupJobWorker[\s\S]+Invoke-CleanupTargetSet') 'The Web worker must use the shared cleanup dispatcher.'
+$script:webWorkerDispatch = $null
+function Update-WebJob { param([string]$JobId, [hashtable]$Values) }
+function Write-CleanupEvent { param($Level, $TargetId, $TargetLabel, $Path, $Bytes, $Message, $JobId) }
+function Invoke-CleanupTargetSet {
+    param(
+        [string[]]$TargetIds,
+        [bool]$Deep,
+        [bool]$Confirmed,
+        [string]$JobId = '',
+        [scriptblock]$OnTargetStart = $null
+    )
+    $script:webWorkerDispatch = [pscustomobject]@{
+        targetIds = @($TargetIds)
+        deep = $Deep
+        confirmed = $Confirmed
+        jobId = $JobId
+    }
+    if ($null -ne $OnTargetStart) {
+        & $OnTargetStart ([pscustomobject]@{ label = 'Fixture target' }) 1 1
+    }
+}
+
+Invoke-WebCleanupJobWorker -Payload @{
+    JobId = 'fixture-job'
+    TargetIds = @('user-temp')
+    Deep = $false
+}
+Assert-True (($script:webWorkerDispatch.targetIds -join ',') -eq 'user-temp') 'The Web worker must forward requested target IDs to the shared dispatcher.'
+Assert-True (-not $script:webWorkerDispatch.deep -and $script:webWorkerDispatch.confirmed) 'The Web worker must preserve safe mode after HTTP confirmation.'
+Assert-True ($script:webWorkerDispatch.jobId -eq 'fixture-job') 'The Web worker must preserve the cleanup job ID.'
 ```
 
 - [ ] **Step 2: Run the safety test and verify it fails**
@@ -328,19 +356,30 @@ git commit -m "feat: add guarded CLI cleanup center"
 
 **Interfaces:**
 - Consumes: `Show-CleanupCenter`, `Invoke-CleanupTargetSet`.
-- Produces: honest main-menu text and confirmed shortcut `[13]`.
+- Produces: honest main-menu text, `Show-Menu -InputReader [scriptblock] -CleanupCenter [scriptblock]` for testable routing, and confirmed shortcut `[13]`.
 
-- [ ] **Step 1: Add failing source-level menu assertions**
+- [ ] **Step 1: Add failing menu behavior assertions**
 
 Append to `tests/cli-cleanup-center.ps1`:
 
 ```powershell
-$source = Get-Content -Raw -LiteralPath $scriptPath
-Assert-True ($source.Contains('dashboard does not auto-run, view it by selecting option 15')) 'English Dashboard hint must point to option 15.'
-Assert-True ($source.Contains('chi xem khi ban chon muc 15')) 'Vietnamese Dashboard hint must point to option 15.'
-Assert-True ($source -match "'9'\s*\{\s*Show-CleanupCenter") 'Main-menu option 9 must open Cleanup Center.'
-Assert-True (-not $source.Contains('Xoa TAT CA bo nho dem')) 'The misleading all-cache label must be removed.'
-Assert-True (-not $source.Contains('Clear ALL system caches & Recycle Bin')) 'The misleading English all-cache label must be removed.'
+. $scriptPath '--lang' 'en' '--help' | Out-Null
+Assert-True ($T.HeaderSubtitle -eq 'Quick view: dashboard does not auto-run, view it by selecting option 15.') 'English Dashboard hint must point to option 15.'
+Assert-True ($T.Menu9 -eq 'Open CLI Cleanup Center (Safe / Advanced)') 'English option 9 must identify the Cleanup Center.'
+
+. $scriptPath '--lang' 'vi' '--help' | Out-Null
+Assert-True ($T.HeaderSubtitle -eq 'Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15.') 'Vietnamese Dashboard hint must point to option 15.'
+Assert-True ($T.Menu9 -eq 'Mo Trung tam don dep CLI (An toan / Nang cao)') 'Vietnamese option 9 must identify the Cleanup Center.'
+
+$script:menuChoices = [Collections.Generic.Queue[string]]::new()
+$script:menuChoices.Enqueue('9')
+$script:menuChoices.Enqueue('0')
+$script:cleanupCenterOpenCount = 0
+function Ensure-Admin { }
+Show-Menu `
+    -InputReader { param($Prompt) $script:menuChoices.Dequeue() } `
+    -CleanupCenter { $script:cleanupCenterOpenCount++ }
+Assert-True ($script:cleanupCenterOpenCount -eq 1) 'Main-menu option 9 must open Cleanup Center exactly once.'
 ```
 
 Add a mocked shortcut assertion proving `Clean-RecycleBin` cancels on `n` and dispatches only `recycle-bin` on `y`.
