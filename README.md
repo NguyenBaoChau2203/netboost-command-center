@@ -426,16 +426,16 @@ NetBoost is designed around a strict **do-no-harm** philosophy:
 
 ```bash
 cd src/web
-npm install
+pnpm install
 
 # Start Vite dev server (hot reload)
-npm run dev
+pnpm dev
 
 # Type-check and build production bundle → src/web/dist/
-npm run build
+pnpm build
 
 # Lint
-npm run lint
+pnpm lint
 ```
 
 > **Note:** The Vite dev server runs on `localhost:5173` with CORS pre-configured for the PowerShell backend at `127.0.0.1:47812`. For the full integrated experience, start the CLI backend first.
@@ -460,7 +460,7 @@ NetBoost_Command_Center.bat --web --port 47812
 |-----------|----------------|-------|
 | Windows | 10 (1903+) / 11 | Required for `Get-NetTCPConnection`, `Get-NetAdapter`, `Get-NetRoute` |
 | Windows PowerShell | **5.1** | Ships with all supported Windows versions; no PowerShell 7 needed |
-| Node.js + npm | Any (optional) | Only required for Web UI development / rebuilding the frontend |
+| Node.js + pnpm | Current LTS / pnpm 10+ (optional) | Only required for Web UI development / rebuilding the frontend |
 | Administrator rights | Required for DNS ops | Auto-elevated via UAC on first launch |
 
 ---
