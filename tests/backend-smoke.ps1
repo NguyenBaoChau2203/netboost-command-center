@@ -10,7 +10,13 @@ $launcher = Join-Path $repoRoot 'NetBoost_Command_Center.bat'
 $expectedVersion = '1.0.1'
 
 if ($Port -le 0) {
-    $Port = 47800 + (Get-Random -Minimum 100 -Maximum 800)
+    $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    try {
+        $portProbe.Start()
+        $Port = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    } finally {
+        $portProbe.Stop()
+    }
 }
 
 function Invoke-RawHttpRequest {
@@ -184,6 +190,9 @@ try {
     Assert-True ($windowsUpdateDownloads.deepOnly -eq $true) 'Windows Update downloads must be deep-only.'
     Assert-True ($windowsUpdateDownloads.requiresConfirmation -eq $true) 'Windows Update downloads must require confirmation.'
     Assert-True ($windowsUpdateDownloads.path -like '*SoftwareDistribution\Download') 'Windows Update downloads must expose the expected Windows cache path.'
+    Assert-True ($windowsUpdateDownloads.estimatedBytes -eq 0) 'Windows Update downloads must not enumerate the live cache for an estimate.'
+    Assert-True ($windowsUpdateDownloads.estimatedFileCount -eq 0) 'Windows Update downloads must not count files in the live cache.'
+    Assert-True ($windowsUpdateDownloads.estimateComplete -eq $false) 'Windows Update downloads must report its estimate as unavailable.'
 
     $staticRoot = Invoke-WebRequest -Uri "$base/" -UseBasicParsing -TimeoutSec 5
     Assert-True ($staticRoot.StatusCode -eq 200) 'Static UI root did not respond with 200.'

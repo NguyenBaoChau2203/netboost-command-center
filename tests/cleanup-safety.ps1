@@ -30,23 +30,28 @@ $serviceStates = @{
 $serviceEvents = [Collections.Generic.List[string]]::new()
 $serviceStateReader = {
     param([string]$Name)
+    $serviceEvents.Add("get:$Name") | Out-Null
     return [pscustomobject]@{ Name = $Name; Status = $serviceStates[$Name] }
 }
 $serviceStopper = {
     param([string]$Name)
     $serviceEvents.Add("stop:$Name") | Out-Null
+    $serviceStates[$Name] = 'Stopped'
 }
 $serviceStarter = {
     param([string]$Name)
     $serviceEvents.Add("start:$Name") | Out-Null
+    $serviceStates[$Name] = 'Running'
 }
 
 Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action {
     $serviceEvents.Add('action') | Out-Null
 } -GetServiceState $serviceStateReader -StopService $serviceStopper -StartService $serviceStarter
-Assert-True (($serviceEvents -join ',') -eq 'stop:wuauserv,action,start:wuauserv') 'Only services that were originally running should be stopped and restored.'
+Assert-True (($serviceEvents -join ',') -eq 'get:wuauserv,get:BITS,stop:wuauserv,get:wuauserv,action,get:wuauserv,start:wuauserv,get:wuauserv') 'All original states must be captured before any service is stopped, and stop/start states must be verified.'
+Assert-True ($serviceStates.wuauserv -eq 'Running' -and $serviceStates.BITS -eq 'Stopped') 'The original running/stopped service states must be restored exactly.'
 
 $failureEvents = [Collections.Generic.List[string]]::new()
+$failureStates = @{ wuauserv = 'Running' }
 $actionFailureRethrown = $false
 try {
     Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv') -Action {
@@ -54,43 +59,91 @@ try {
         throw 'simulated cleanup failure'
     } -GetServiceState {
         param([string]$Name)
-        return [pscustomobject]@{ Name = $Name; Status = 'Running' }
+        $failureEvents.Add("get:$Name") | Out-Null
+        return [pscustomobject]@{ Name = $Name; Status = $failureStates[$Name] }
     } -StopService {
         param([string]$Name)
         $failureEvents.Add("stop:$Name") | Out-Null
+        $failureStates[$Name] = 'Stopped'
     } -StartService {
         param([string]$Name)
         $failureEvents.Add("start:$Name") | Out-Null
+        $failureStates[$Name] = 'Running'
     }
 } catch {
     $actionFailureRethrown = $_.Exception.Message -eq 'simulated cleanup failure'
 }
 Assert-True $actionFailureRethrown 'A cleanup action failure must be rethrown after service restoration.'
-Assert-True (($failureEvents -join ',') -eq 'stop:wuauserv,action,start:wuauserv') 'An originally running service must be restored when cleanup fails.'
+Assert-True ($failureStates.wuauserv -eq 'Running') 'An originally running service must be restored when cleanup fails.'
 
 $stopFailureEvents = [Collections.Generic.List[string]]::new()
+$stopFailureStates = @{ wuauserv = 'Running'; BITS = 'Running' }
 $stopFailureRethrown = $false
 try {
     Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action {
         $stopFailureEvents.Add('action') | Out-Null
     } -GetServiceState {
         param([string]$Name)
-        return [pscustomobject]@{ Name = $Name; Status = 'Running' }
+        $stopFailureEvents.Add("get:$Name") | Out-Null
+        return [pscustomobject]@{ Name = $Name; Status = $stopFailureStates[$Name] }
     } -StopService {
         param([string]$Name)
         $stopFailureEvents.Add("stop:$Name") | Out-Null
         if ($Name -eq 'BITS') {
             throw 'simulated stop failure'
         }
+        $stopFailureStates[$Name] = 'Stopped'
     } -StartService {
         param([string]$Name)
         $stopFailureEvents.Add("start:$Name") | Out-Null
+        $stopFailureStates[$Name] = 'Running'
     }
 } catch {
     $stopFailureRethrown = $_.Exception.Message -eq 'simulated stop failure'
 }
 Assert-True $stopFailureRethrown 'A service stop failure must abort and be rethrown.'
-Assert-True (($stopFailureEvents -join ',') -eq 'stop:wuauserv,stop:BITS,start:BITS,start:wuauserv') 'A stop failure must skip cleanup and restore every originally running service whose stop was attempted.'
+Assert-True (-not ($stopFailureEvents -contains 'action')) 'A stop failure must abort before cleanup starts.'
+Assert-True ($stopFailureStates.wuauserv -eq 'Running' -and $stopFailureStates.BITS -eq 'Running') 'A stop failure must restore the original states without restarting a service that never stopped.'
+
+$stuckStopState = @{ wuauserv = 'Running' }
+$stuckStopActionRan = $false
+$stuckStopRejected = $false
+try {
+    Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv') -Action {
+        $stuckStopActionRan = $true
+    } -GetServiceState {
+        param([string]$Name)
+        return [pscustomobject]@{ Name = $Name; Status = $stuckStopState[$Name] }
+    } -StopService {
+        param([string]$Name)
+        # Simulate Stop-Service returning while the service is still running.
+    } -StartService {
+        param([string]$Name)
+        $stuckStopState[$Name] = 'Running'
+    }
+} catch {
+    $stuckStopRejected = $_.Exception.Message -like '*did not reach Stopped*'
+}
+Assert-True $stuckStopRejected 'Cleanup must abort when a required service does not reach Stopped.'
+Assert-True (-not $stuckStopActionRan) 'Cleanup must not run while a required service is still running.'
+
+$stuckRestoreState = @{ wuauserv = 'Running' }
+$stuckRestoreRejected = $false
+try {
+    Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv') -Action { } -GetServiceState {
+        param([string]$Name)
+        return [pscustomobject]@{ Name = $Name; Status = $stuckRestoreState[$Name] }
+    } -StopService {
+        param([string]$Name)
+        $stuckRestoreState[$Name] = 'Stopped'
+    } -StartService {
+        param([string]$Name)
+        # Simulate Start-Service returning while the service remains stopped.
+    }
+} catch {
+    $stuckRestoreRejected = $_.Exception.Message -like 'Failed to restore Windows service state*'
+}
+Assert-True $stuckRestoreRejected 'A service that does not return to Running must fail the transaction.'
 
 $sandboxRoot = Join-Path ([IO.Path]::GetTempPath()) ("NetBoost-Cleanup-Safety-{0}" -f [guid]::NewGuid().ToString('N'))
 $siblingRoot = "$sandboxRoot-sibling"

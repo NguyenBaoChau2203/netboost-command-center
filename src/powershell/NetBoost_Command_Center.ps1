@@ -1082,6 +1082,10 @@ function Invoke-WithTemporarilyStoppedServices {
         [scriptblock]$StopService = {
             param([string]$Name)
             Stop-Service -Name $Name -ErrorAction Stop
+            (Get-Service -Name $Name -ErrorAction Stop).WaitForStatus(
+                [ServiceProcess.ServiceControllerStatus]::Stopped,
+                [TimeSpan]::FromSeconds(30)
+            )
         },
         [scriptblock]$StartService = {
             param([string]$Name)
@@ -1105,20 +1109,34 @@ function Invoke-WithTemporarilyStoppedServices {
     }
 
     $servicesToRestore = [Collections.Generic.List[string]]::new()
+    $originalStates = @{}
     $operationError = $null
     $restoreErrors = [Collections.Generic.List[string]]::new()
 
     try {
+        # Snapshot every service before changing any of them. Stopping one service can affect another.
         foreach ($serviceName in $uniqueNames) {
             $serviceState = & $GetServiceState $serviceName
             if ($null -eq $serviceState) {
                 throw ("Windows service state was not returned: {0}" -f $serviceName)
             }
 
-            if ([string]$serviceState.Status -eq 'Running') {
-                # Record the original state before stopping so a partial stop failure is also recovered.
+            $status = [string]$serviceState.Status
+            if ($status -notin @('Running', 'Stopped')) {
+                throw ("Windows service is not in a stable Running/Stopped state: {0} ({1})" -f $serviceName, $status)
+            }
+            $originalStates[$serviceName] = $status
+        }
+
+        foreach ($serviceName in $uniqueNames) {
+            if ($originalStates[$serviceName] -eq 'Running') {
                 $servicesToRestore.Add($serviceName) | Out-Null
                 & $StopService $serviceName
+
+                $stoppedState = & $GetServiceState $serviceName
+                if ($null -eq $stoppedState -or [string]$stoppedState.Status -ne 'Stopped') {
+                    throw ("Windows service did not reach Stopped: {0}" -f $serviceName)
+                }
             }
         }
 
@@ -1129,7 +1147,14 @@ function Invoke-WithTemporarilyStoppedServices {
         for ($index = $servicesToRestore.Count - 1; $index -ge 0; $index--) {
             $serviceName = $servicesToRestore[$index]
             try {
-                & $StartService $serviceName
+                $currentState = & $GetServiceState $serviceName
+                if ($null -eq $currentState -or [string]$currentState.Status -ne 'Running') {
+                    & $StartService $serviceName
+                    $restoredState = & $GetServiceState $serviceName
+                    if ($null -eq $restoredState -or [string]$restoredState.Status -ne 'Running') {
+                        throw ("Windows service did not return to Running: {0}" -f $serviceName)
+                    }
+                }
             } catch {
                 $restoreErrors.Add(("{0}: {1}" -f $serviceName, $_.Exception.Message)) | Out-Null
             }

@@ -54,5 +54,5 @@ npm run build
 
 1.  **Local-First & Safety First**: Không tích hợp bất kỳ API cloud, telemetry hay tài khoản đăng nhập. Máy chủ backend bind chặt vào `127.0.0.1`.
 2.  **Skip Locked Files**: Logic dọn dẹp được lập trình mô phỏng bỏ qua các file bị locked thay vì force-kill tiến trình hay Display Driver đồ họa, đảm bảo không gây treo hệ thống hay gián đoạn trải nghiệm người dùng Windows.
-3.  **Report-Only Node Scanner**: Scanner chỉ phân tích đĩa và đưa ra hướng dẫn copyable, không thực hiện ghi hoặc thay đổi cấu trúc file của lập trình viên.
+3.  **Guarded Windows Cleanup**: Các target hệ thống chạy qua hàng rào đường dẫn; Windows Update downloads chỉ có ở Deep mode, cần xác nhận và khôi phục trạng thái `wuauserv`/`BITS` ban đầu.
 4.  **Accented Vietnamese Text**: Toàn bộ nhãn, hướng dẫn và thông điệp hiển thị sử dụng Tiếng Việt chuẩn có dấu, rõ ràng và trực quan cao.
