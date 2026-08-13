@@ -38,7 +38,23 @@ Brand assets and Windows shortcut contract:
 .\tests\branding-assets.ps1
 ```
 
-This verifies that the simplified SVG is absent, the canonical Mochi Cat PNG is the approved 1254×1254 RGBA file with the exact SHA-256 hash, and the ICO contains all seven required layers. It also validates Git ignore policy and the target, working directory, icon, and version metadata of a disposable Windows shortcut. It does not launch NetBoost or request elevation.
+This verifies that the simplified SVG is absent, the canonical Mochi Cat PNG is the approved 1254×1254 RGBA file with the exact SHA-256 hash, and the ICO contains all seven required layers. It also builds the local EXE and validates Git ignore policy plus the target, working directory, icon, and version metadata of a disposable Windows shortcut. It does not launch NetBoost or request elevation.
+
+Mochi Cat EXE launcher:
+
+```powershell
+.\tests\exe-launcher.ps1
+```
+
+This compiles the C# launcher in memory and as a Windows EXE, round-trips difficult command-line arguments through the native Windows parser, verifies UAC and PowerShell process settings, checks the GUI subsystem and version metadata, and compares the embedded icon pixel-for-pixel with the 32-pixel ICO layer. It does not show a UAC dialog or execute the real NetBoost runtime.
+
+Portable release package:
+
+```powershell
+.\tests\release-package.ps1
+```
+
+This builds and extracts the v1.0.1 portable ZIP, verifies all runtime files including the branded EXE, rejects development-only files, parses the packaged PowerShell scripts, creates a disposable EXE-targeting shortcut, and verifies the SHA-256 sidecar file.
 
 pnpm migration policy:
 
