@@ -36,21 +36,20 @@ function Read-BigEndianUInt32 {
 $svgPath = Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.svg'
 $pngPath = Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png'
 $icoPath = Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.ico'
+$expectedPngHash = '65FB24DF0490DEF66230911CD64E50784CA5BAF95770C5F2B7E8F70E1668BBBE'
 
-Assert-True (Test-Path -LiteralPath $svgPath -PathType Leaf) 'Mochi Cat SVG asset is missing.'
-[xml]$svg = Get-Content -Raw -LiteralPath $svgPath
-Assert-True ($svg.DocumentElement.LocalName -eq 'svg') 'Mochi Cat SVG root element is invalid.'
-Assert-True ($svg.DocumentElement.GetAttribute('viewBox') -eq '0 0 1024 1024') 'Mochi Cat SVG must use the 0 0 1024 1024 viewBox.'
-Assert-True ($svg.SelectNodes("//*[local-name()='text']").Count -eq 0) 'Mochi Cat SVG must not contain text elements.'
-Assert-True ($svg.SelectNodes("//*[local-name()='script']").Count -eq 0) 'Mochi Cat SVG must not contain scripts.'
+Assert-True (-not (Test-Path -LiteralPath $svgPath)) 'The simplified Mochi Cat SVG must be removed; the approved PNG is canonical.'
 
 Assert-True (Test-Path -LiteralPath $pngPath -PathType Leaf) 'Mochi Cat PNG asset is missing.'
 [byte[]]$pngBytes = [IO.File]::ReadAllBytes($pngPath)
 [byte[]]$expectedPngSignature = @(137, 80, 78, 71, 13, 10, 26, 10)
 Assert-True ($pngBytes.Length -ge 24) 'Mochi Cat PNG is too small to contain an IHDR chunk.'
 Assert-True (($pngBytes[0..7] -join ',') -eq ($expectedPngSignature -join ',')) 'Mochi Cat PNG signature is invalid.'
-Assert-True ((Read-BigEndianUInt32 -Bytes $pngBytes -Offset 16) -eq 1024) 'Mochi Cat PNG width must be 1024 pixels.'
-Assert-True ((Read-BigEndianUInt32 -Bytes $pngBytes -Offset 20) -eq 1024) 'Mochi Cat PNG height must be 1024 pixels.'
+Assert-True ((Read-BigEndianUInt32 -Bytes $pngBytes -Offset 16) -eq 1254) 'Mochi Cat PNG width must be 1254 pixels.'
+Assert-True ((Read-BigEndianUInt32 -Bytes $pngBytes -Offset 20) -eq 1254) 'Mochi Cat PNG height must be 1254 pixels.'
+Assert-True ($pngBytes[25] -eq 6) 'Mochi Cat PNG must use RGBA color type 6.'
+$actualPngHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $pngPath).Hash
+Assert-True ($actualPngHash -eq $expectedPngHash) 'Mochi Cat PNG must be byte-for-byte identical to the approved source artwork.'
 
 Assert-True (Test-Path -LiteralPath $icoPath -PathType Leaf) 'Mochi Cat ICO asset is missing.'
 [byte[]]$icoBytes = [IO.File]::ReadAllBytes($icoPath)
@@ -115,8 +114,9 @@ try {
 [pscustomobject]@{
     ok = $true
     assertions = $script:assertionCount
-    svg = 'verified'
-    png = '1024x1024'
+    svg = 'absent'
+    png = '1254x1254 RGBA'
+    pngSha256 = $actualPngHash
     icoLayers = $actualSizes
     shortcut = 'verified'
 } | ConvertTo-Json -Depth 4
