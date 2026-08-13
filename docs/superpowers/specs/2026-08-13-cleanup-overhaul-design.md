@@ -31,7 +31,8 @@ Historical release notes and historical implementation plans may retain npm comm
 ### Target changes
 
 - Keep `user-temp` and `windows-temp` as separate visible targets.
-- Replace raw deletion of `C:\Windows\SoftwareDistribution\Download` with `component-store`, implemented only through `dism.exe /Online /Cleanup-Image /StartComponentCleanup`.
+- Keep `component-store`, implemented only through `dism.exe /Online /Cleanup-Image /StartComponentCleanup`, as the cleanup for superseded Windows components.
+- Add `windows-update-downloads` as a separate high-risk, confirmation-required, deep-only target for `C:\Windows\SoftwareDistribution\Download`. It is never selected by default. The action records the original states of `wuauserv` and `BITS`, stops only services that are running, deletes only the contents of the `Download` directory through the canonical filesystem guard, and restores only the services that were running before the action. A service-stop failure aborts deletion, and restoration runs from `finally` even if cleanup fails.
 - Add `delivery-optimization`, implemented through `Delete-DeliveryOptimizationCache -Force` without `-IncludePinnedFiles`.
 - Keep `windows-prefetch` visible, off by default, confirmation-required, and deep-only. Only `*.pf` files older than 30 days are eligible; `ReadyBoot` and `Layout.ini` are never targeted.
 - Keep Recycle Bin as a special action rather than a raw filesystem target.
@@ -51,7 +52,7 @@ Filesystem estimates are bounded so the targets endpoint stays responsive. Each 
 
 ## User experience
 
-The current UI layout remains. Target rows gain only the metadata necessary to communicate partial/system estimates and deep-only status. Default selection remains based on `requiresConfirmation=false`, so Prefetch and Component Store are never selected automatically.
+The current UI layout remains. Target rows gain only the metadata necessary to communicate partial/system estimates and deep-only status. Default selection remains based on `requiresConfirmation=false`, so Prefetch, Component Store, and Windows Update Downloads are never selected automatically. The target count becomes 15.
 
 ## Official sources
 
@@ -59,11 +60,13 @@ The current UI layout remains. Target rows gain only the metadata necessary to c
 - Component Store cleanup and the warning against raw WinSxS deletion: https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/clean-up-the-winsxs-folder?view=windows-11
 - Delivery Optimization cache cmdlet: https://learn.microsoft.com/en-us/powershell/module/deliveryoptimization/delete-deliveryoptimizationcache?view=windowsserver2025-ps
 - Windows startup prefetch behavior: https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/improving-system-startup-performance
+- Windows Update cache troubleshooting sequence (stop service, clear `SoftwareDistribution`, restart service): https://support.microsoft.com/en-us/windows/deployment/updates-lifecycle/troubleshoot-problems-updating-windows
 
 ## Verification
 
 - Observe failing regression checks before changing production code.
 - Run backend smoke tests and cleanup policy tests.
+- Verify service-state planning and guaranteed restoration with test doubles; automated tests must not stop real Windows services or delete the real update cache.
 - Run PowerShell parser checks for both scripts.
 - Run React/TypeScript lint and production build.
 - Search tracked current product surfaces for removed npm-to-pnpm symbols.
