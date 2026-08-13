@@ -71,10 +71,52 @@ $actualSizes = for ($index = 0; $index -lt $icoImageCount; $index++) {
 $expectedSizes = @(16, 24, 32, 48, 64, 128, 256)
 Assert-True ((($actualSizes | Sort-Object) -join ',') -eq (($expectedSizes | Sort-Object) -join ',')) 'Mochi Cat ICO layers must be 16, 24, 32, 48, 64, 128, and 256 pixels.'
 
+$shortcutHelperPath = Join-Path $repoRoot 'tools\Create-NetBoostShortcut.ps1'
+$gitIgnorePath = Join-Path $repoRoot '.gitignore'
+$expectedLauncherPath = Join-Path $repoRoot 'NetBoost_Command_Center.bat'
+$testShortcutPath = Join-Path ([IO.Path]::GetTempPath()) ("NetBoost-Mochi-Cat-{0}.lnk" -f [guid]::NewGuid().ToString('N'))
+
+Assert-True (Test-Path -LiteralPath $shortcutHelperPath -PathType Leaf) 'The branded shortcut helper is missing.'
+Assert-True ((Get-Content -LiteralPath $gitIgnorePath) -contains '/NetBoost Command Center.lnk') 'The generated root shortcut must be ignored by Git.'
+
+try {
+    & $shortcutHelperPath -ShortcutPath $testShortcutPath | Out-Null
+    Assert-True (Test-Path -LiteralPath $testShortcutPath -PathType Leaf) 'The shortcut helper did not create the requested shortcut.'
+
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($testShortcutPath)
+    Assert-True ([IO.Path]::GetFullPath($shortcut.TargetPath) -eq [IO.Path]::GetFullPath($expectedLauncherPath)) 'The branded shortcut must target NetBoost_Command_Center.bat.'
+    Assert-True ([IO.Path]::GetFullPath($shortcut.WorkingDirectory) -eq [IO.Path]::GetFullPath($repoRoot)) 'The branded shortcut working directory must be the repository root.'
+    Assert-True ($shortcut.IconLocation -eq "$icoPath,0") 'The branded shortcut must use the Mochi Cat ICO at index zero.'
+    Assert-True ($shortcut.Description -like '*1.0.1*') 'The branded shortcut description must identify version 1.0.1.'
+
+    $conflictingDestinationRejected = $false
+    try {
+        & $shortcutHelperPath -ShortcutPath $testShortcutPath -Desktop | Out-Null
+    } catch {
+        $conflictingDestinationRejected = $_.Exception.Message -like '*cannot be used together*'
+    }
+    Assert-True $conflictingDestinationRejected 'The shortcut helper must reject simultaneous -ShortcutPath and -Desktop destinations.'
+
+    $missingParentShortcut = Join-Path ([IO.Path]::GetTempPath()) ("NetBoost-Missing-{0}\NetBoost.lnk" -f [guid]::NewGuid().ToString('N'))
+    $missingParentRejected = $false
+    try {
+        & $shortcutHelperPath -ShortcutPath $missingParentShortcut | Out-Null
+    } catch {
+        $missingParentRejected = $_.Exception.Message -like '*destination directory does not exist*'
+    }
+    Assert-True $missingParentRejected 'The shortcut helper must reject a destination whose parent directory does not exist.'
+} finally {
+    if (Test-Path -LiteralPath $testShortcutPath) {
+        Remove-Item -LiteralPath $testShortcutPath -Force
+    }
+}
+
 [pscustomobject]@{
     ok = $true
     assertions = $script:assertionCount
     svg = 'verified'
     png = '1024x1024'
     icoLayers = $actualSizes
+    shortcut = 'verified'
 } | ConvertTo-Json -Depth 4
