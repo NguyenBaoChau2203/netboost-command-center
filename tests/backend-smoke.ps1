@@ -128,7 +128,9 @@ try {
     $dashboard = Invoke-RestMethod -Uri "$base/api/dashboard" -Method Get -Headers $authHeaders -TimeoutSec 10
     Assert-True ($null -ne $dashboard.dns) 'Dashboard DNS object missing.'
 
-    $targets = @(Invoke-RestMethod -Uri "$base/api/cleanup/targets" -Method Get -Headers $authHeaders -TimeoutSec 10)
+    # Cold scans of a large user Temp tree can exceed ten seconds while still
+    # respecting the backend's bounded estimate contract.
+    $targets = @(Invoke-RestMethod -Uri "$base/api/cleanup/targets" -Method Get -Headers $authHeaders -TimeoutSec 30)
     if ($targets.Count -eq 1 -and $targets[0] -is [Array]) {
         $targets = @($targets[0])
     }
