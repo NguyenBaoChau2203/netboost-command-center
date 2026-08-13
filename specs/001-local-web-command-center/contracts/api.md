@@ -115,6 +115,8 @@ Returns supported targets only.
 ]
 ```
 
+There are 15 supported targets. `action` is one of `filesystem`, `recycle-bin`, `delivery-optimization`, `component-store`, or `windows-update-downloads`. The `windows-update-downloads` target is high-risk, confirmation-required, Deep-only, and always resolves `%SystemRoot%\SoftwareDistribution\Download` on the server. Clients cannot provide a deletion path. The action deletes only children of that guarded root and restores the original running/stopped state of `wuauserv` and `BITS`.
+
 ## POST /api/cleanup/run
 
 Body:

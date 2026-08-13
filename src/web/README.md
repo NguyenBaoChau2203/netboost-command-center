@@ -44,7 +44,7 @@ npm run build
 *   **`src/views/`**:
     *   `DashboardView.tsx` (US1): Tổng quan adapter mạng, DNS đang sử dụng, task tự động, latency so sánh nhanh Google vs Cloudflare DNS, tiến trình dọn dẹp và Activity Log terminal.
     *   `DnsView.tsx` (US2): Cho phép tự động tối ưu chọn DNS nhanh nhất, force nhà mạng Google/Cloudflare, reset DHCP, flush cache và Console PowerShell.
-    *   `CleanupView.tsx` (US3): Checklist 14 mục dọn dẹp an toàn, gồm User/Windows Temp, cache đồ họa, Delivery Optimization, Component Store và Prefetch deep-only; có ước lượng giới hạn, cảnh báo rủi ro, popup xác nhận, live terminal logs và Locked-file table.
+    *   `CleanupView.tsx` (US3): Checklist 15 mục dọn dẹp an toàn, gồm User/Windows Temp, cache đồ họa, Delivery Optimization, Component Store, Windows Update downloads và Prefetch deep-only; có ước lượng giới hạn, cảnh báo rủi ro, popup xác nhận, live terminal logs và Locked-file table.
     *   `AutoTaskView.tsx` (US4): Quản lý tạo/xóa Scheduled Task `NetBoost Auto DNS Optimizer` chạy lúc đăng nhập Windows. Tích hợp thanh timeline kiểm tra thực tế và PowerShell terminal.
     *   `SettingsView.tsx` (US5): Bento layout cho cài đặt giao diện (ngôn ngữ EN/VI, dark mode, compact mode), hiển thị bind address local-only read-only, session token toggles, PowerShell paths và nút **Test PowerShell v5.1** mô phỏng kiểm tra môi trường Windows.
 

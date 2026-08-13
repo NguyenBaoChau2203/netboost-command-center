@@ -54,7 +54,7 @@ export interface CleanupTarget {
   label: string;
   path: string;
   risk: 'low' | 'medium' | 'high';
-  action: 'filesystem' | 'recycle-bin' | 'delivery-optimization' | 'component-store';
+  action: 'filesystem' | 'recycle-bin' | 'delivery-optimization' | 'component-store' | 'windows-update-downloads';
   deepOnly: boolean;
   safeMinAgeMinutes: number;
   deepMinAgeMinutes: number;

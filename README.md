@@ -31,7 +31,7 @@
 | **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 18-option interactive menu, fully ASCII-safe |
 | **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[18]` | React/Vite SPA served by a pure PowerShell TCP backend |
 
-Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, npm scanning, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
+Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
 
 ---
 
@@ -43,7 +43,7 @@ Both modes share the **same PowerShell core engine** for DNS management, cache c
 - **Scheduled Auto-DNS Task** — optional, off by default, and created only after explicit confirmation; registers `NetBoost Auto DNS Optimizer` to run 30 seconds after Windows logon
 - **Flush DNS / Reset to DHCP** — clean slate in one keystroke
 
-### 🧹 Cache Cleanup (14 Targets)
+### 🧹 Cache Cleanup (15 Targets)
 Safe, transparent cleanup with bounded estimates, automatic locked-file skipping, and supported Windows maintenance actions:
 
 | # | Target ID | Path | Risk |
@@ -59,11 +59,14 @@ Safe, transparent cleanup with bounded estimates, automatic locked-file skipping
 | 9 | `recycle-bin` | Recycle Bin | High ⚠️ |
 | 10 | `component-store` | DISM `/StartComponentCleanup` — Deep only | Medium ⚠️ |
 | 11 | `delivery-optimization` | Supported Delivery Optimization cmdlet | Low |
-| 12 | `windows-font-cache` | Windows Font Cache service directory | Low |
-| 13 | `windows-prefetch` | Only `*.pf` older than 30 days — Deep only | Medium ⚠️ |
-| 14 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
+| 12 | `windows-update-downloads` | `%SystemRoot%\SoftwareDistribution\Download` — Deep only | High ⚠️ |
+| 13 | `windows-font-cache` | Windows Font Cache service directory | Low |
+| 14 | `windows-prefetch` | Only `*.pf` older than 30 days — Deep only | Medium ⚠️ |
+| 15 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
 
-> Prefetch is visible but off by default. It requires Deep mode and confirmation; `ReadyBoot` and `Layout.ini` are never targeted. Raw deletion of `SoftwareDistribution\Download` is intentionally not used.
+> Prefetch and Windows Update downloads are visible but off by default. Both require Deep mode and confirmation. Prefetch preserves `ReadyBoot` and `Layout.ini`. Windows Update cleanup deletes only the contents below `SoftwareDistribution\Download`, temporarily stops only running `wuauserv`/`BITS` services, and restores their original states even when cleanup fails. Windows may download removed update packages again when needed.
+
+The Windows Update sequence follows Microsoft's documented troubleshooting workflow: [Microsoft Support — troubleshoot problems updating Windows](https://support.microsoft.com/en-us/windows/deployment/updates-lifecycle/troubleshoot-problems-updating-windows) and [Microsoft Learn — common Windows Update errors](https://learn.microsoft.com/en-us/troubleshoot/windows-client/installing-updates-features-roles/common-windows-update-errors).
 
 ### 📊 Live Dashboard
 - Real-time adapter name, DNS servers, and connection status
@@ -237,7 +240,7 @@ NetBoost_Command_Center/
 │
 ├── src/
 │   ├── powershell/
-│   │   └── NetBoost_Command_Center.ps1  # CLI core: menu, DNS, cleanup, npm scan
+│   │   └── NetBoost_Command_Center.ps1  # CLI core: menu, DNS, cleanup
 │   │                                    # 1 532 lines · #Requires -Version 5.1
 │   │
 │   ├── backend/
@@ -270,7 +273,7 @@ NetBoost_Command_Center/
 │           └── views/
 │               ├── DashboardView.tsx    # Latency cards, cleanup summary, live logs
 │               ├── DnsView.tsx          # DNS adapter status + optimization actions
-│               ├── CleanupView.tsx      # 14-target cleanup with live job progress
+│               ├── CleanupView.tsx      # 15-target cleanup with live job progress
 │               ├── AutoTaskView.tsx     # Task Scheduler management + workflow diagram
 │               └── SettingsView.tsx     # Language, theme, security, logging settings
 │
@@ -299,7 +302,7 @@ NetBoost_Command_Center/
 │  ┌─────────────────┐   dot-sources   ┌───────────────────────┐  │
 │  │   CLI Engine    │ ─────────────►  │  src/backend/         │  │
 │  │  (Menu / DNS /  │                 │  NetBoost.LocalWeb.ps1│  │
-│  │  Cleanup / npm) │ ◄─────────────  │  (REST API + TCP srv) │  │
+│  │    Cleanup)     │ ◄─────────────  │  (REST API + TCP srv) │  │
 │  └─────────────────┘  shared state   └───────────────────────┘  │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
@@ -368,7 +371,7 @@ All endpoints require the session cookie or `X-NetBoost-Token` header (except `G
 | `POST` | `/api/dns/provider` | `{ provider: "Google"\|"Cloudflare" }` | Force specific DNS provider |
 | `POST` | `/api/dns/flush` | — | Flush DNS client cache |
 | `POST` | `/api/dns/reset` | — | Reset DNS to DHCP/Auto |
-| `GET` | `/api/cleanup/targets` | — | 14 cleanup targets with bounded estimate metadata |
+| `GET` | `/api/cleanup/targets` | — | 15 cleanup targets with bounded estimate metadata |
 | `POST` | `/api/cleanup/start` | `{ targets: string[], mode: "safe"\|"deep" }` | Start async cleanup job |
 | `GET` | `/api/cleanup/job/{id}` | — | Poll cleanup job progress + events |
 | `GET` | `/api/jobs/{id}` | — | Poll async job state |
@@ -408,8 +411,9 @@ NetBoost is designed around a strict **do-no-harm** philosophy:
 - ✅ **Rejects drive roots, profile roots, Windows roots, path escapes, and reparse-point traversal** before file deletion
 - ✅ **Never uploads user files, local paths, logs, or settings**
 - ✅ **Never installs persistent services** — only one optional Task Scheduler entry after explicit user confirmation
-- ✅ **Requires explicit confirmation** for risky targets (Recycle Bin, Component Store, Prefetch, Crash Dumps)
-- ✅ **Uses supported Windows actions** for Component Store and Delivery Optimization cleanup; never uses DISM `ResetBase`
+- ✅ **Requires explicit confirmation** for risky targets (Recycle Bin, Component Store, Windows Update downloads, Prefetch, Crash Dumps)
+- ✅ **Uses supported/documented Windows actions** for Component Store, Delivery Optimization, and Windows Update download cleanup; never uses DISM `ResetBase`
+- ✅ **Restores Windows Update service state** — only originally running `wuauserv`/`BITS` services are stopped and restarted, including after cleanup errors
 - ✅ **Never stops unrelated processes on port conflicts** — reports the occupied port instead of force-killing another app
 - ✅ **All server runspaces and owned dialog child processes terminate** when the CLI window is closed
 - ✅ **Local-first by design** — TCP server is bound exclusively to `127.0.0.1`, inaccessible from LAN or WAN

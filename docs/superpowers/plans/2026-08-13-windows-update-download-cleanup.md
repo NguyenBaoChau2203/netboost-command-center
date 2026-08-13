@@ -6,7 +6,7 @@
 
 **Architecture:** The backend exposes a fifteenth cleanup target with its own `windows-update-downloads` action. The PowerShell action runs filesystem deletion through the existing canonical path guard inside a service transaction that records `wuauserv` and `BITS`, stops only services that are currently running, and restores those services in `finally` even when cleanup fails. Tests inject service fakes so automated verification never touches real Windows services or the real update cache.
 
-**Tech Stack:** Windows PowerShell 5.1, local loopback REST API, React 19.2.6, TypeScript 6.0.2, pnpm.
+**Tech Stack:** Windows PowerShell 5.1, local loopback REST API, React 19.2.6, TypeScript 6.0.2, npm.
 
 ## Global Constraints
 
@@ -131,17 +131,17 @@
 
 - [ ] **Step 4: Build with the authoritative package manager.**
 
-  Run: `pnpm --dir src/web lint`
+  Run: `npm --prefix src/web run lint`
 
   Expected: exit 0.
 
-  Run: `pnpm --dir src/web build`
+  Run: `npm --prefix src/web run build`
 
   Expected: exit 0 and refreshed backend public assets.
 
 - [ ] **Step 5: Run the complete verification suite.**
 
-  Run the PowerShell parser over `src/powershell/NetBoost_Command_Center.ps1` and `src/backend/NetBoost.LocalWeb.ps1`, then run `tests/cleanup-safety.ps1`, `tests/backend-smoke.ps1`, `pnpm --dir src/web lint`, `pnpm --dir src/web build`, and `git diff --check`. No step may invoke the new destructive action against the host.
+  Run the PowerShell parser over `src/powershell/NetBoost_Command_Center.ps1` and `src/backend/NetBoost.LocalWeb.ps1`, then run `tests/cleanup-safety.ps1`, `tests/backend-smoke.ps1`, `npm --prefix src/web run lint`, `npm --prefix src/web run build`, and `git diff --check`. No step may invoke the new destructive action against the host.
 
 - [ ] **Step 6: Commit the web and documentation increment.**
 

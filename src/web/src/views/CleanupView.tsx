@@ -89,6 +89,9 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
       if (selectedIds.includes('component-store')) {
         reason += t('cleanConfirmComponentStoreReason');
       }
+      if (selectedIds.includes('windows-update-downloads')) {
+        reason += t('cleanConfirmWindowsUpdateReason');
+      }
       if (deepMode) {
         reason += t('cleanConfirmDeepCleanReason');
       }

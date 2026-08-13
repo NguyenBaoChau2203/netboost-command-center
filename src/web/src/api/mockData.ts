@@ -176,6 +176,19 @@ export const allowedCleanupTargets: CleanupTarget[] = [
     description: 'Dùng cmdlet Windows được hỗ trợ và giữ lại pinned files'
   }),
   createCleanupTarget({
+    id: 'windows-update-downloads',
+    label: 'Windows Update downloads',
+    path: '%SystemRoot%\\SoftwareDistribution\\Download',
+    risk: 'high',
+    action: 'windows-update-downloads',
+    deepOnly: true,
+    estimatedBytes: 0,
+    estimatedFileCount: 0,
+    estimateComplete: false,
+    requiresConfirmation: true,
+    description: 'Gói cập nhật Windows đã tải; khôi phục trạng thái ban đầu của wuauserv và BITS'
+  }),
+  createCleanupTarget({
     id: 'windows-font-cache',
     label: 'Windows Font Cache',
     path: 'C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Local\\FontCache',
