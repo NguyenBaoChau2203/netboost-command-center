@@ -90,6 +90,54 @@ Assert-True ($result -eq 'back' -and $dispatches.Count -eq 0) 'Back must return 
 $result = Invoke-CliCleanupSelection -Choice 'invalid' -ReadInput { param($Prompt) throw 'Invalid choice must not prompt.' } -CleanupInvoker $fakeInvoker
 Assert-True ($result -eq 'invalid' -and $dispatches.Count -eq 0) 'Invalid choice must return without dispatch.'
 
+. $scriptPath '--lang' 'en' '--help' | Out-Null
+Assert-True ($T.HeaderSubtitle -eq 'Quick view: dashboard does not auto-run, view it by selecting option 15.') 'English Dashboard hint must point to option 15.'
+Assert-True ($T.Menu9 -eq 'Open CLI Cleanup Center (Safe / Advanced)') 'English option 9 must identify the Cleanup Center.'
+Assert-True ($T.Menu10 -eq 'Clean Windows & User Temp files older than 24 hours') 'English Temp shortcut must describe its 24-hour retention.'
+Assert-True ($T.Menu12 -eq 'Clean basic Windows system cache') 'English system shortcut must not claim to clean every system cache.'
+Assert-True ($T.Menu13 -eq 'Empty Recycle Bin (confirmation required)') 'English Recycle Bin shortcut must advertise confirmation.'
+
+. $scriptPath '--lang' 'vi' '--help' | Out-Null
+Assert-True ($T.HeaderSubtitle -eq 'Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15.') 'Vietnamese Dashboard hint must point to option 15.'
+Assert-True ($T.Menu9 -eq 'Mo Trung tam don dep CLI (An toan / Nang cao)') 'Vietnamese option 9 must identify the Cleanup Center.'
+Assert-True ($T.Menu10 -eq 'Don tep tam Windows & Nguoi dung cu hon 24 gio') 'Vietnamese Temp shortcut must describe its 24-hour retention.'
+Assert-True ($T.Menu12 -eq 'Don cache Windows co ban') 'Vietnamese system shortcut must not claim to clean every system cache.'
+Assert-True ($T.Menu13 -eq 'Lam trong Thung rac (can xac nhan)') 'Vietnamese Recycle Bin shortcut must advertise confirmation.'
+
+$showMenuCommand = Get-Command Show-Menu
+Assert-True $showMenuCommand.Parameters.ContainsKey('InputReader') 'Main menu must accept an injected input reader for behavior tests.'
+Assert-True $showMenuCommand.Parameters.ContainsKey('CleanupCenter') 'Main menu must accept an injected Cleanup Center action for behavior tests.'
+
+$script:menuChoices = [Collections.Generic.Queue[string]]::new()
+$script:menuChoices.Enqueue('9')
+$script:menuChoices.Enqueue('0')
+$script:cleanupCenterOpenCount = 0
+function Ensure-Admin { }
+Show-Menu `
+    -InputReader { param($Prompt) $script:menuChoices.Dequeue() } `
+    -CleanupCenter { $script:cleanupCenterOpenCount++ }
+Assert-True ($script:cleanupCenterOpenCount -eq 1) 'Main-menu option 9 must open Cleanup Center exactly once.'
+
+foreach ($shortcutName in @('Clean-Temp', 'Clean-Game', 'Clean-System', 'Clean-RecycleBin')) {
+    Assert-True (Get-Command $shortcutName).Parameters.ContainsKey('CleanupInvoker') "$shortcutName must dispatch through the shared cleanup target invoker."
+}
+Assert-True (Get-Command Clean-RecycleBin).Parameters.ContainsKey('ReadInput') 'Recycle Bin shortcut must accept confirmation input.'
+
+$dispatches.Clear()
+Clean-Temp -CleanupInvoker $fakeInvoker | Out-Null
+Clean-Game -CleanupInvoker $fakeInvoker | Out-Null
+Clean-System -CleanupInvoker $fakeInvoker | Out-Null
+Assert-True (($dispatches[0].targetIds -join ',') -eq 'user-temp,windows-temp') 'Temp shortcut must use the two canonical Temp targets.'
+Assert-True (($dispatches[1].targetIds -join ',') -eq 'directx-cache,nvidia-cache,steam-cache') 'Game shortcut must use the three canonical shader-cache targets.'
+Assert-True (($dispatches[2].targetIds -join ',') -eq 'thumbnails,inet-cache,delivery-optimization,windows-font-cache,windows-error-reports') 'System shortcut must use only basic Windows cache targets.'
+Assert-True (@($dispatches | Where-Object confirmed).Count -eq 0) 'Safe shortcuts must not claim confirmation.'
+
+$dispatches.Clear()
+$result = Clean-RecycleBin -ReadInput { param($Prompt) 'n' } -CleanupInvoker $fakeInvoker
+Assert-True ($result -eq 'cancelled' -and $dispatches.Count -eq 0) 'Recycle Bin shortcut cancellation must not dispatch.'
+$result = Clean-RecycleBin -ReadInput { param($Prompt) 'y' } -CleanupInvoker $fakeInvoker
+Assert-True ($result -eq 'completed' -and ($dispatches[0].targetIds -join ',') -eq 'recycle-bin') 'Recycle Bin shortcut must dispatch only after y confirmation.'
+
 [pscustomobject]@{
     ok = $true
     assertions = $script:assertionCount

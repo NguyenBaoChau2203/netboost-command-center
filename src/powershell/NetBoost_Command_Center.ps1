@@ -29,7 +29,7 @@ for ($i = 0; $i -lt $RawArgs.Count; $i++) {
 # Translation Dictionary (Localizations strictly in clean, accentless strings)
 $T = @{}
 if ($Language -eq 'EN') {
-    $T.HeaderSubtitle = "Quick view: dashboard does not auto-run, view it by selecting option 16."
+    $T.HeaderSubtitle = "Quick view: dashboard does not auto-run, view it by selecting option 15."
     $T.NetworkSec     = "Network / DNS"
     $T.CleanupSec     = "Cleanup"
     $T.ToolsSec       = "Tools"
@@ -46,11 +46,11 @@ if ($Language -eq 'EN') {
     $T.Menu6  = "Remove scheduled task for Auto DNS"
     $T.Menu7  = "Flush DNS cache"
     $T.Menu8  = "Reset DNS to DHCP/Auto"
-    $T.Menu9  = "Clear ALL system caches & Recycle Bin"
-    $T.Menu10 = "Clean Windows & User temporary files"
+    $T.Menu9  = "Open CLI Cleanup Center (Safe / Advanced)"
+    $T.Menu10 = "Clean Windows & User Temp files older than 24 hours"
     $T.Menu11 = "Clean Game & Graphics cache"
-    $T.Menu12 = "Clean System cache"
-    $T.Menu13 = "Empty Recycle Bin"
+    $T.Menu12 = "Clean basic Windows system cache"
+    $T.Menu13 = "Empty Recycle Bin (confirmation required)"
     $T.Menu14 = "Open Chris Titus WinUtil"
     $T.Menu15 = "View telemetry Dashboard"
     $T.Menu16 = "Switch interface language to Vietnamese"
@@ -88,7 +88,6 @@ if ($Language -eq 'EN') {
     $T.WinUtilWarn    = "WARNING: This will download and run winutil from GitHub."
     $T.WinUtilSource  = "Source: https://github.com/ChrisTitusTech/winutil"
     $T.ConfirmPrompt  = "Continue? Enter y to confirm (y/n)"
-    $T.ConfirmAll     = "This clears ALL caches + Recycle Bin. Continue? (y/n)"
     $T.ActionSkipped  = "Operation skipped."
     $T.OpeningWinUtil = "Opening Chris Titus WinUtil..."
 
@@ -152,7 +151,7 @@ if ($Language -eq 'EN') {
     $T.CliCleanupDescription9 = "Deletes only .pf files older than 30 days; ReadyBoot and Layout.ini are preserved."
 } else {
     # Default: VI (Vietnamese without accents)
-    $T.HeaderSubtitle = "Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 16."
+    $T.HeaderSubtitle = "Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15."
     $T.NetworkSec     = "Network / DNS"
     $T.CleanupSec     = "Cleanup"
     $T.ToolsSec       = "Tools"
@@ -169,11 +168,11 @@ if ($Language -eq 'EN') {
     $T.Menu6  = "Xoa lich auto DNS"
     $T.Menu7  = "Xoa bo nho dem DNS (Flush DNS)"
     $T.Menu8  = "Dat lai DNS ve DHCP/Auto"
-    $T.Menu9  = "Xoa TAT CA bo nho dem (Cache)"
-    $T.Menu10 = "Don dep tep tin tam Windows & Nguoi dung"
+    $T.Menu9  = "Mo Trung tam don dep CLI (An toan / Nang cao)"
+    $T.Menu10 = "Don tep tam Windows & Nguoi dung cu hon 24 gio"
     $T.Menu11 = "Don dep bo nho dem Game & Do hoa"
-    $T.Menu12 = "Don dep bo nho dem He thong"
-    $T.Menu13 = "Lam trong Thung rac (Recycle Bin)"
+    $T.Menu12 = "Don cache Windows co ban"
+    $T.Menu13 = "Lam trong Thung rac (can xac nhan)"
     $T.Menu14 = "Mo Chris Titus WinUtil"
     $T.Menu15 = "Xem bang thong tin (Dashboard)"
     $T.Menu16 = "Switch interface language to English"
@@ -211,7 +210,6 @@ if ($Language -eq 'EN') {
     $T.WinUtilWarn    = "CANH BAO: Lenh nay se tai va chay script tu GitHub (winutil)."
     $T.WinUtilSource  = "Nguon: https://github.com/ChrisTitusTech/winutil"
     $T.ConfirmPrompt  = "Tiep tuc? Nhap y de xac nhan (y/n)"
-    $T.ConfirmAll     = "Hanh dong nay se xoa sach cache + Recycle Bin. Tiep tuc? (y/n)"
     $T.ActionSkipped  = "Da huy thao tac."
     $T.OpeningWinUtil = "Dang mo Chris Titus WinUtil..."
 
@@ -1161,8 +1159,14 @@ function Show-CleanupCenter {
 }
 
 function Clean-Temp {
-    Remove-FolderContents -Path $env:TEMP -Label 'Temp cua nguoi dung' -MinAgeMinutes 1440 -TargetId 'user-temp'
-    Remove-FolderContents -Path 'C:\Windows\Temp' -Label 'Windows Temp' -MinAgeMinutes 1440 -TargetId 'windows-temp'
+    param(
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    & $CleanupInvoker ([string[]]@('user-temp', 'windows-temp')) $false $false | Out-Null
 }
 
 function Get-SteamInstallPaths {
@@ -1262,12 +1266,14 @@ function Clean-SteamShaderCache {
 }
 
 function Clean-Game {
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'D3DSCache') -Label 'DirectX Shader Cache' -TargetId 'directx-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\DXCache') -Label 'NVIDIA DXCache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\GLCache') -Label 'NVIDIA GLCache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\NV_Cache') -Label 'NVIDIA NV_Cache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Steam\shadercache\730') -Label 'Steam shader cache CS2 (LocalAppData)' -TargetId 'steam-cache'
-    Clean-SteamShaderCache -AppId '730' -Label 'Steam shader cache CS2'
+    param(
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    & $CleanupInvoker ([string[]]@('directx-cache', 'nvidia-cache', 'steam-cache')) $false $false | Out-Null
 }
 
 function Invoke-WithTemporarilyStoppedServices {
@@ -1448,39 +1454,26 @@ function Invoke-ComponentStoreCleanup {
 }
 
 function Clean-System {
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'CrashDumps') -Label 'Crash dumps cua ung dung' -TargetId 'crash-dumps'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer') -Label 'Thumbnail cache cua Windows' -TargetId 'thumbnails'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\INetCache') -Label 'Web cache cua Windows INetCache' -TargetId 'inet-cache'
-    Invoke-DeliveryOptimizationCleanup
+    param(
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    & $CleanupInvoker ([string[]]@('thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports')) $false $false | Out-Null
 }
 
 function Clean-RecycleBin {
-    Ensure-Admin
-    Write-UiHeader $T.CleanRecycleBin 'RecycleBin'
-    Write-CleanupEvent -Level INFO -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message 'Starting Recycle Bin cleanup'
+    param(
+        [scriptblock]$ReadInput = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
 
-    try {
-        Clear-RecycleBin -Force -ErrorAction Stop
-        Write-Status Ok $T.CleanBinDone
-        Write-CleanupEvent -Level SUMMARY -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed'
-    } catch {
-        Write-Status Warning $T.CleanBinEmpty
-        Write-CleanupEvent -Level WARN -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message $_.Exception.Message
-    }
-}
-
-function Clean-All {
-    Write-Status Warning $T.ConfirmAll
-    $confirm = Read-UiInput $T.ConfirmPrompt
-    if ($confirm -ne 'y') {
-        Write-Status Warning $T.ActionSkipped
-        return
-    }
-
-    Clean-Temp
-    Clean-Game
-    Clean-System
-    Clean-RecycleBin
+    return Invoke-CliCleanupSelection -Choice '6' -ReadInput $ReadInput -CleanupInvoker $CleanupInvoker
 }
 
 function Get-TaskStatusText {
@@ -1564,6 +1557,11 @@ function Switch-UiLanguage {
 }
 
 function Show-Menu {
+    param(
+        [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupCenter = { Show-CleanupCenter }
+    )
+
     Ensure-Admin
     [Console]::Title = $AppName
 
@@ -1595,7 +1593,7 @@ function Show-Menu {
         Write-MenuItem '0' $T.Menu0 Red 'Exit'
         Write-Line ''
 
-        $choice = Read-UiInput $T.PromptChoice
+        $choice = [string](& $InputReader $T.PromptChoice)
 
         try {
             switch ($choice) {
@@ -1607,7 +1605,7 @@ function Show-Menu {
                 '6' { Remove-AutoDnsTask; Pause-Back }
                 '7' { Flush-Dns; Pause-Back }
                 '8' { Reset-DnsToAuto; Pause-Back }
-                '9' { Clean-All; Pause-Back }
+                '9' { & $CleanupCenter }
                 '10' { Clean-Temp; Pause-Back }
                 '11' { Clean-Game; Pause-Back }
                 '12' { Clean-System; Pause-Back }

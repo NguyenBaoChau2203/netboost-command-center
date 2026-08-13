@@ -28,8 +28,8 @@
 
 | Mode | Interface | Entry Point | Description |
 |------|-----------|-------------|-------------|
-| **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 18-option interactive menu, fully ASCII-safe |
-| **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[18]` | React/Vite SPA served by a pure PowerShell TCP backend |
+| **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 17-option interactive menu, fully ASCII-safe |
+| **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[17]` | React/Vite SPA served by a pure PowerShell TCP backend |
 
 Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
 
@@ -141,7 +141,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
 +--------------------------------------------------------------------+
 |                         NETBOOST COMMAND CENTER                    |
 +--------------------------------------------------------------------+
-  Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 16.
+  Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15.
 
   NETWORK / DNS
   [1 ] Auto chon DNS ping thap hon ngay bay gio
@@ -154,11 +154,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
   [8 ] Dat lai DNS ve DHCP/Auto
 
   CLEANUP
-  [9 ] Xoa TAT CA bo nho dem (Cache)
-  [10] Don dep tep tin tam Windows & Nguoi dung
+  [9 ] Mo Trung tam don dep CLI (An toan / Nang cao)
+  [10] Don tep tam Windows & Nguoi dung cu hon 24 gio
   [11] Don dep bo nho dem Game & Do hoa
-  [12] Don dep bo nho dem He thong
-  [13] Lam trong Thung rac (Recycle Bin)
+  [12] Don cache Windows co ban
+  [13] Lam trong Thung rac (can xac nhan)
 
   TOOLS
   [14] Mo Chris Titus WinUtil
@@ -169,6 +169,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
 
 Chon muc (Select option):
 ```
+
+Option **`[9]`** opens the CLI Cleanup Center with three clearly separated groups:
+
+- **Safe:** Temp older than 24 hours, Game/Graphics caches, basic Windows caches, or the recommended safe group.
+- **Confirmation required:** Crash Dumps and Recycle Bin require `y` before execution.
+- **Advanced:** Component Store, Windows Update downloads, and Prefetch require the exact case-sensitive text `CONFIRM`. Advanced actions run one at a time; there is no “run all advanced” option.
+
+The CLI and Web UI use the same cleanup target definitions, path guards, retention rules, and Windows service restoration logic.
 
 ### 3 — Launch the Web UI (Option 17 or `--web`)
 
@@ -329,7 +337,7 @@ NetBoost_Command_Center/
 │  └─────────────────┘  shared state   └───────────────────────┘  │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
-              Mode: --web / Option [18]
+              Mode: --web / Option [17]
                                │
                                ▼
           ┌────────────────────────────────────┐
@@ -343,8 +351,7 @@ NetBoost_Command_Center/
           │   • POST /api/dns/flush            │
           │   • POST /api/dns/reset            │
           │   • GET  /api/cleanup/targets      │
-          │   • POST /api/cleanup/start        │
-          │   • GET  /api/cleanup/job/{id}     │
+          │   • POST /api/cleanup/run          │
           │   • GET  /api/jobs/{id}            │
           │   • GET  /api/jobs/{id}/events     │
           │   • GET  /api/tasks/auto-dns       │
@@ -395,8 +402,7 @@ All endpoints require the session cookie or `X-NetBoost-Token` header (except `G
 | `POST` | `/api/dns/flush` | — | Flush DNS client cache |
 | `POST` | `/api/dns/reset` | — | Reset DNS to DHCP/Auto |
 | `GET` | `/api/cleanup/targets` | — | 15 cleanup targets with bounded estimate metadata |
-| `POST` | `/api/cleanup/start` | `{ targets: string[], mode: "safe"\|"deep" }` | Start async cleanup job |
-| `GET` | `/api/cleanup/job/{id}` | — | Poll cleanup job progress + events |
+| `POST` | `/api/cleanup/run` | `{ targetIds: string[], deep: boolean, confirmed: boolean }` | Start a validated async cleanup job |
 | `GET` | `/api/jobs/{id}` | — | Poll async job state |
 | `GET` | `/api/jobs/{id}/events` | — | Poll capped live job events |
 | `GET` | `/api/tasks/auto-dns` | — | Auto-DNS scheduled task state |

@@ -16,6 +16,14 @@ Current backend smoke:
 
 This starts `NetBoost_Command_Center.bat --web` on a random local port, verifies health/dashboard/static UI serving, checks the 15-target cleanup contract, confirms mutating requests need a session token, verifies non-admin privileged actions return `adminRequired`, and confirms the removed npm scanner routes stay absent. It does not change DNS, scheduled tasks, or system cleanup targets.
 
+CLI Cleanup Center behavior:
+
+```powershell
+.\tests\cli-cleanup-center.ps1
+```
+
+This verifies the Safe, confirmation-required, and Advanced target mappings; exact `CONFIRM` behavior; corrected main-menu routing and copy; and the `[10]` through `[13]` shortcuts. It injects fake input and a fake cleanup dispatcher, so it never deletes real files or invokes Windows maintenance actions.
+
 Cleanup policy safety:
 
 ```powershell
