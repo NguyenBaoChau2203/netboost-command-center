@@ -1068,6 +1068,114 @@ function Clean-Game {
     Clean-SteamShaderCache -AppId '730' -Label 'Steam shader cache CS2'
 }
 
+function Invoke-WithTemporarilyStoppedServices {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ServiceNames,
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Action,
+        [scriptblock]$GetServiceState = {
+            param([string]$Name)
+            Get-Service -Name $Name -ErrorAction Stop
+        },
+        [scriptblock]$StopService = {
+            param([string]$Name)
+            Stop-Service -Name $Name -ErrorAction Stop
+        },
+        [scriptblock]$StartService = {
+            param([string]$Name)
+            Start-Service -Name $Name -ErrorAction Stop
+            (Get-Service -Name $Name -ErrorAction Stop).WaitForStatus(
+                [ServiceProcess.ServiceControllerStatus]::Running,
+                [TimeSpan]::FromSeconds(30)
+            )
+        }
+    )
+
+    $uniqueNames = [Collections.Generic.List[string]]::new()
+    foreach ($serviceName in @($ServiceNames)) {
+        if ([string]::IsNullOrWhiteSpace($serviceName) -or $uniqueNames -contains $serviceName) {
+            continue
+        }
+        $uniqueNames.Add($serviceName) | Out-Null
+    }
+    if ($uniqueNames.Count -eq 0) {
+        throw 'At least one Windows service name is required.'
+    }
+
+    $servicesToRestore = [Collections.Generic.List[string]]::new()
+    $operationError = $null
+    $restoreErrors = [Collections.Generic.List[string]]::new()
+
+    try {
+        foreach ($serviceName in $uniqueNames) {
+            $serviceState = & $GetServiceState $serviceName
+            if ($null -eq $serviceState) {
+                throw ("Windows service state was not returned: {0}" -f $serviceName)
+            }
+
+            if ([string]$serviceState.Status -eq 'Running') {
+                # Record the original state before stopping so a partial stop failure is also recovered.
+                $servicesToRestore.Add($serviceName) | Out-Null
+                & $StopService $serviceName
+            }
+        }
+
+        & $Action
+    } catch {
+        $operationError = $_
+    } finally {
+        for ($index = $servicesToRestore.Count - 1; $index -ge 0; $index--) {
+            $serviceName = $servicesToRestore[$index]
+            try {
+                & $StartService $serviceName
+            } catch {
+                $restoreErrors.Add(("{0}: {1}" -f $serviceName, $_.Exception.Message)) | Out-Null
+            }
+        }
+    }
+
+    if ($null -ne $operationError) {
+        if ($restoreErrors.Count -gt 0) {
+            $operationError.Exception.Data['ServiceRestoreErrors'] = ($restoreErrors -join '; ')
+        }
+        throw $operationError
+    }
+    if ($restoreErrors.Count -gt 0) {
+        throw ("Failed to restore Windows service state: {0}" -f ($restoreErrors -join '; '))
+    }
+}
+
+function Invoke-WindowsUpdateDownloadCleanup {
+    param(
+        [string]$TargetId = 'windows-update-downloads',
+        [string]$TargetLabel = 'Windows Update downloads',
+        [string]$JobId = ''
+    )
+
+    Ensure-Admin
+    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        throw 'The Windows SystemRoot environment variable is unavailable.'
+    }
+
+    $updateDownloadPath = Join-Path $env:SystemRoot 'SoftwareDistribution\Download'
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Temporarily stopping running Windows Update services before cleanup' -JobId $JobId
+
+    $cleanupAction = {
+        Remove-FolderContents -Path $updateDownloadPath -Label $TargetLabel -TargetId $TargetId -JobId $JobId
+    }.GetNewClosure()
+
+    try {
+        Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action $cleanupAction
+    } catch {
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message $_.Exception.Message -JobId $JobId
+        throw
+    }
+
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Windows Update download cleanup completed and original service states were restored' -JobId $JobId
+}
+
 function Invoke-DeliveryOptimizationCleanup {
     param(
         [string]$TargetId = 'delivery-optimization',

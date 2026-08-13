@@ -90,7 +90,7 @@ try {
     $stopFailureRethrown = $_.Exception.Message -eq 'simulated stop failure'
 }
 Assert-True $stopFailureRethrown 'A service stop failure must abort and be rethrown.'
-Assert-True (($stopFailureEvents -join ',') -eq 'stop:wuauserv,stop:BITS,start:wuauserv') 'A stop failure must skip cleanup and restore services already stopped.'
+Assert-True (($stopFailureEvents -join ',') -eq 'stop:wuauserv,stop:BITS,start:BITS,start:wuauserv') 'A stop failure must skip cleanup and restore every originally running service whose stop was attempted.'
 
 $sandboxRoot = Join-Path ([IO.Path]::GetTempPath()) ("NetBoost-Cleanup-Safety-{0}" -f [guid]::NewGuid().ToString('N'))
 $siblingRoot = "$sandboxRoot-sibling"

@@ -298,7 +298,7 @@ function New-CleanupTargetDefinition {
         [ValidateSet('low', 'medium', 'high')]
         [string]$Risk,
         [bool]$RequiresConfirmation,
-        [ValidateSet('filesystem', 'recycle-bin', 'delivery-optimization', 'component-store')]
+        [ValidateSet('filesystem', 'recycle-bin', 'delivery-optimization', 'component-store', 'windows-update-downloads')]
         [string]$Action = 'filesystem',
         [bool]$DeepOnly = $false,
         [int]$SafeMinAgeMinutes = 0,
@@ -356,6 +356,7 @@ function Get-CleanupTargetDefinitions {
         New-CleanupTargetDefinition -Id 'recycle-bin' -Label 'Recycle Bin' -DisplayPath 'Recycle Bin' -Paths @() -Risk 'high' -RequiresConfirmation $true -Action 'recycle-bin' -Description 'Windows Recycle Bin'
         New-CleanupTargetDefinition -Id 'component-store' -Label 'Windows Component Store' -DisplayPath 'DISM /StartComponentCleanup' -Paths @() -Risk 'medium' -RequiresConfirmation $true -Action 'component-store' -DeepOnly $true -Description 'Supported Windows component cleanup via DISM; ResetBase is never used'
         New-CleanupTargetDefinition -Id 'delivery-optimization' -Label 'Delivery Optimization cache' -DisplayPath 'Windows Delivery Optimization cache' -Paths @() -Risk 'low' -RequiresConfirmation $false -Action 'delivery-optimization' -Description 'Supported Delivery Optimization cache cleanup; pinned files are preserved'
+        New-CleanupTargetDefinition -Id 'windows-update-downloads' -Label 'Windows Update downloads' -DisplayPath '%SystemRoot%\SoftwareDistribution\Download' -Paths @((Join-Path $env:SystemRoot 'SoftwareDistribution\Download')) -Risk 'high' -RequiresConfirmation $true -Action 'windows-update-downloads' -DeepOnly $true -Description 'Downloaded Windows Update packages; running wuauserv and BITS services are restored to their original states'
         New-CleanupTargetDefinition -Id 'windows-font-cache' -Label 'Windows Font Cache' -DisplayPath 'C:\Windows\ServiceProfiles\LocalService\AppData\Local\FontCache' -Paths @('C:\Windows\ServiceProfiles\LocalService\AppData\Local\FontCache') -Risk 'low' -RequiresConfirmation $false -Description 'Windows local font cache files'
         New-CleanupTargetDefinition -Id 'windows-prefetch' -Label 'Windows Prefetch (old .pf only)' -DisplayPath 'C:\Windows\Prefetch\*.pf' -Paths @('C:\Windows\Prefetch') -Risk 'medium' -RequiresConfirmation $true -DeepOnly $true -SafeMinAgeMinutes 43200 -DeepMinAgeMinutes 43200 -IncludePatterns @('*.pf') -ExcludePathSegments @('ReadyBoot') -Description 'Optional deep cleanup of .pf files older than 30 days; ReadyBoot and Layout.ini are preserved'
         New-CleanupTargetDefinition -Id 'windows-error-reports' -Label 'Windows Error Reports' -DisplayPath 'C:\ProgramData\Microsoft\Windows\WER' -Paths @('C:\ProgramData\Microsoft\Windows\WER') -Risk 'low' -RequiresConfirmation $false -SafeMinAgeMinutes 1440 -DeepMinAgeMinutes 60 -Description 'Windows error report files'
@@ -767,6 +768,8 @@ function Get-WebBackgroundFunctionBootstrap {
         'Test-CleanupCandidatePath',
         'Test-CleanupFileEligible',
         'Remove-FolderContents',
+        'Invoke-WithTemporarilyStoppedServices',
+        'Invoke-WindowsUpdateDownloadCleanup',
         'Invoke-DeliveryOptimizationCleanup',
         'Invoke-ComponentStoreCleanup',
         'New-NetBoostTimestamp',
@@ -1126,6 +1129,9 @@ function Invoke-WebCleanupJobWorker {
                 }
                 'component-store' {
                     Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
+                }
+                'windows-update-downloads' {
+                    Invoke-WindowsUpdateDownloadCleanup -TargetId $target.id -TargetLabel $target.label -JobId $jobId
                 }
                 default {
                     $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
