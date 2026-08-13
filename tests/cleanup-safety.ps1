@@ -21,6 +21,76 @@ function Assert-True {
 Assert-True ($null -ne (Get-Command Test-SafeCleanupRoot -ErrorAction SilentlyContinue)) 'Test-SafeCleanupRoot is not implemented.'
 Assert-True ($null -ne (Get-Command Test-CleanupCandidatePath -ErrorAction SilentlyContinue)) 'Test-CleanupCandidatePath is not implemented.'
 Assert-True ($null -ne (Get-Command Test-CleanupFileEligible -ErrorAction SilentlyContinue)) 'Test-CleanupFileEligible is not implemented.'
+Assert-True ($null -ne (Get-Command Invoke-WithTemporarilyStoppedServices -ErrorAction SilentlyContinue)) 'Invoke-WithTemporarilyStoppedServices is not implemented.'
+
+$serviceStates = @{
+    wuauserv = 'Running'
+    BITS = 'Stopped'
+}
+$serviceEvents = [Collections.Generic.List[string]]::new()
+$serviceStateReader = {
+    param([string]$Name)
+    return [pscustomobject]@{ Name = $Name; Status = $serviceStates[$Name] }
+}
+$serviceStopper = {
+    param([string]$Name)
+    $serviceEvents.Add("stop:$Name") | Out-Null
+}
+$serviceStarter = {
+    param([string]$Name)
+    $serviceEvents.Add("start:$Name") | Out-Null
+}
+
+Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action {
+    $serviceEvents.Add('action') | Out-Null
+} -GetServiceState $serviceStateReader -StopService $serviceStopper -StartService $serviceStarter
+Assert-True (($serviceEvents -join ',') -eq 'stop:wuauserv,action,start:wuauserv') 'Only services that were originally running should be stopped and restored.'
+
+$failureEvents = [Collections.Generic.List[string]]::new()
+$actionFailureRethrown = $false
+try {
+    Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv') -Action {
+        $failureEvents.Add('action') | Out-Null
+        throw 'simulated cleanup failure'
+    } -GetServiceState {
+        param([string]$Name)
+        return [pscustomobject]@{ Name = $Name; Status = 'Running' }
+    } -StopService {
+        param([string]$Name)
+        $failureEvents.Add("stop:$Name") | Out-Null
+    } -StartService {
+        param([string]$Name)
+        $failureEvents.Add("start:$Name") | Out-Null
+    }
+} catch {
+    $actionFailureRethrown = $_.Exception.Message -eq 'simulated cleanup failure'
+}
+Assert-True $actionFailureRethrown 'A cleanup action failure must be rethrown after service restoration.'
+Assert-True (($failureEvents -join ',') -eq 'stop:wuauserv,action,start:wuauserv') 'An originally running service must be restored when cleanup fails.'
+
+$stopFailureEvents = [Collections.Generic.List[string]]::new()
+$stopFailureRethrown = $false
+try {
+    Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action {
+        $stopFailureEvents.Add('action') | Out-Null
+    } -GetServiceState {
+        param([string]$Name)
+        return [pscustomobject]@{ Name = $Name; Status = 'Running' }
+    } -StopService {
+        param([string]$Name)
+        $stopFailureEvents.Add("stop:$Name") | Out-Null
+        if ($Name -eq 'BITS') {
+            throw 'simulated stop failure'
+        }
+    } -StartService {
+        param([string]$Name)
+        $stopFailureEvents.Add("start:$Name") | Out-Null
+    }
+} catch {
+    $stopFailureRethrown = $_.Exception.Message -eq 'simulated stop failure'
+}
+Assert-True $stopFailureRethrown 'A service stop failure must abort and be rethrown.'
+Assert-True (($stopFailureEvents -join ',') -eq 'stop:wuauserv,stop:BITS,start:wuauserv') 'A stop failure must skip cleanup and restore services already stopped.'
 
 $sandboxRoot = Join-Path ([IO.Path]::GetTempPath()) ("NetBoost-Cleanup-Safety-{0}" -f [guid]::NewGuid().ToString('N'))
 $siblingRoot = "$sandboxRoot-sibling"
@@ -67,6 +137,14 @@ try {
     }
     Assert-True $prefetchSafeModeRejected 'A deep-only target must be rejected in safe mode.'
 
+    $windowsUpdateSafeModeRejected = $false
+    try {
+        Start-WebCleanupJob -TargetIds @('windows-update-downloads') -Deep $false -Confirmed $true | Out-Null
+    } catch {
+        $windowsUpdateSafeModeRejected = $_.Exception.Message -like 'Deep mode is required*'
+    }
+    Assert-True $windowsUpdateSafeModeRejected 'Windows Update downloads must be rejected in safe mode.'
+
     $unsupportedTargetRejected = $false
     try {
         Start-WebCleanupJob -TargetIds @('not-a-cleanup-target') -Deep $false -Confirmed $true | Out-Null
@@ -81,6 +159,7 @@ try {
         candidateBoundary = 'verified'
         prefetchPolicy = 'verified'
         deepOnlyGuard = 'verified'
+        windowsUpdateServiceTransaction = 'verified'
         supportedTargetGuard = 'verified'
     } | ConvertTo-Json
 } finally {

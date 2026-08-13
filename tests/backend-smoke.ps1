@@ -138,6 +138,7 @@ try {
         'recycle-bin',
         'component-store',
         'delivery-optimization',
+        'windows-update-downloads',
         'windows-font-cache',
         'windows-prefetch',
         'windows-error-reports'
@@ -176,6 +177,13 @@ try {
 
     $deliveryOptimization = $targets | Where-Object { $_.id -eq 'delivery-optimization' }
     Assert-True ($deliveryOptimization.action -eq 'delivery-optimization') 'Delivery Optimization must use its supported PowerShell action.'
+
+    $windowsUpdateDownloads = $targets | Where-Object { $_.id -eq 'windows-update-downloads' }
+    Assert-True ($windowsUpdateDownloads.action -eq 'windows-update-downloads') 'Windows Update downloads must use the service-aware action.'
+    Assert-True ($windowsUpdateDownloads.risk -eq 'high') 'Windows Update downloads must be high risk.'
+    Assert-True ($windowsUpdateDownloads.deepOnly -eq $true) 'Windows Update downloads must be deep-only.'
+    Assert-True ($windowsUpdateDownloads.requiresConfirmation -eq $true) 'Windows Update downloads must require confirmation.'
+    Assert-True ($windowsUpdateDownloads.path -like '*SoftwareDistribution\Download') 'Windows Update downloads must expose the expected Windows cache path.'
 
     $staticRoot = Invoke-WebRequest -Uri "$base/" -UseBasicParsing -TimeoutSec 5
     Assert-True ($staticRoot.StatusCode -eq 200) 'Static UI root did not respond with 200.'
