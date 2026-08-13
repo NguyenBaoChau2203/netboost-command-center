@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">NetBoost Mochi Cat</title>
+  <desc id="description">A cute cream cat with cyan network eyes and a lightning pendant on a navy app icon.</desc>
+
+  <!-- App tile -->
+  <rect x="32" y="32" width="960" height="960" rx="220" fill="#06183D"/>
+  <rect x="55" y="55" width="914" height="914" rx="198" fill="none" stroke="#168FC8" stroke-width="10" opacity="0.48"/>
+
+  <!-- Quiet network constellation -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 360 L168 302 L213 326" stroke="#31D5FF" stroke-width="10" opacity="0.68"/>
+    <path d="M812 322 L858 281 L919 347" stroke="#8B72FF" stroke-width="10" opacity="0.7"/>
+    <path d="M109 690 L163 742 L210 713" stroke="#8B72FF" stroke-width="10" opacity="0.58"/>
+    <path d="M817 724 L868 764 L920 700" stroke="#31D5FF" stroke-width="10" opacity="0.62"/>
+  </g>
+  <g fill="#31D5FF">
+    <circle cx="112" cy="360" r="13"/>
+    <circle cx="168" cy="302" r="13"/>
+    <circle cx="213" cy="326" r="11"/>
+    <circle cx="868" cy="764" r="13"/>
+    <circle cx="920" cy="700" r="11"/>
+  </g>
+  <g fill="#8B72FF">
+    <circle cx="812" cy="322" r="11"/>
+    <circle cx="858" cy="281" r="13"/>
+    <circle cx="919" cy="347" r="13"/>
+    <circle cx="109" cy="690" r="11"/>
+    <circle cx="163" cy="742" r="13"/>
+    <circle cx="210" cy="713" r="11"/>
+  </g>
+
+  <!-- Ears behind the head -->
+  <path d="M254 347 C245 285 257 212 292 152 C307 127 337 130 358 150 L445 258 Z" fill="#FFF4DD" stroke="#DDEEFF" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M770 347 C779 285 767 212 732 152 C717 127 687 130 666 150 L579 258 Z" fill="#FFF4DD" stroke="#DDEEFF" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M291 284 C289 245 298 204 315 177 L390 264 Z" fill="#FF9DAF" opacity="0.86"/>
+  <path d="M733 284 C735 245 726 204 709 177 L634 264 Z" fill="#FF9DAF" opacity="0.86"/>
+
+  <!-- Mochi-round head -->
+  <path d="M512 226 C673 226 798 335 798 493 C798 652 682 754 512 754 C342 754 226 652 226 493 C226 335 351 226 512 226 Z" fill="#FFF4DD" stroke="#DDEEFF" stroke-width="16"/>
+
+  <!-- Tiny forehead tuft -->
+  <path d="M448 239 C468 197 497 191 512 226 C527 191 556 197 576 239 C539 227 485 227 448 239 Z" fill="#FFF9EC"/>
+
+  <!-- Network eyes -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M327 431 L292 401 M327 486 L282 503 M697 431 L732 401 M697 486 L742 503" fill="none" stroke="#31D5FF" stroke-width="12"/>
+    <g fill="#06183D" stroke="#31D5FF" stroke-width="15">
+      <ellipse cx="365" cy="456" rx="72" ry="82"/>
+      <ellipse cx="659" cy="456" rx="72" ry="82"/>
+    </g>
+    <g fill="#31D5FF">
+      <circle cx="365" cy="459" r="31"/>
+      <circle cx="659" cy="459" r="31"/>
+      <circle cx="292" cy="401" r="14"/>
+      <circle cx="282" cy="503" r="14"/>
+      <circle cx="732" cy="401" r="14"/>
+      <circle cx="742" cy="503" r="14"/>
+    </g>
+    <g fill="#FFFFFF">
+      <circle cx="347" cy="435" r="14"/>
+      <circle cx="641" cy="435" r="14"/>
+    </g>
+  </g>
+
+  <!-- Cheeks -->
+  <ellipse cx="315" cy="574" rx="59" ry="34" fill="#FF9DAF" opacity="0.82"/>
+  <ellipse cx="709" cy="574" rx="59" ry="34" fill="#FF9DAF" opacity="0.82"/>
+
+  <!-- Nose and smile -->
+  <path d="M489 545 Q512 526 535 545 Q533 572 512 579 Q491 572 489 545 Z" fill="#F27391"/>
+  <g fill="none" stroke="#23355D" stroke-width="12" stroke-linecap="round">
+    <path d="M512 578 C507 609 478 623 453 608"/>
+    <path d="M512 578 C517 609 546 623 571 608"/>
+  </g>
+
+  <!-- Whiskers -->
+  <g fill="none" stroke="#56698C" stroke-width="10" stroke-linecap="round">
+    <path d="M259 622 L166 603"/>
+    <path d="M268 653 L178 668"/>
+    <path d="M765 622 L858 603"/>
+    <path d="M756 653 L846 668"/>
+  </g>
+  <g fill="#8B72FF">
+    <circle cx="166" cy="603" r="12"/>
+    <circle cx="178" cy="668" r="12"/>
+    <circle cx="858" cy="603" r="12"/>
+    <circle cx="846" cy="668" r="12"/>
+  </g>
+
+  <!-- Tech collar and lightning pendant -->
+  <path d="M383 718 Q512 760 641 718 L629 767 Q512 802 395 767 Z" fill="#168FC8" stroke="#31D5FF" stroke-width="10" stroke-linejoin="round"/>
+  <circle cx="512" cy="790" r="73" fill="#8B72FF" stroke="#31D5FF" stroke-width="12"/>
+  <path d="M526 735 L475 799 L510 799 L496 851 L551 781 L517 781 Z" fill="#FFF4DD" stroke="#FFFFFF" stroke-width="7" stroke-linejoin="round"/>
+
+  <!-- Small brand spark -->
+  <g fill="#31D5FF">
+    <circle cx="774" cy="165" r="14"/>
+    <path d="M774 126 L774 94 M774 236 L774 204 M735 165 L703 165 M845 165 L813 165" fill="none" stroke="#31D5FF" stroke-width="10" stroke-linecap="round"/>
+  </g>
+</svg>

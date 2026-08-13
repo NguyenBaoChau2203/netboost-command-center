@@ -69,7 +69,7 @@ $actualSizes = for ($index = 0; $index -lt $icoImageCount; $index++) {
 }
 
 $expectedSizes = @(16, 24, 32, 48, 64, 128, 256)
-Assert-True (($actualSizes | Sort-Object) -join ',') -eq (($expectedSizes | Sort-Object) -join ',') 'Mochi Cat ICO layers must be 16, 24, 32, 48, 64, 128, and 256 pixels.'
+Assert-True ((($actualSizes | Sort-Object) -join ',') -eq (($expectedSizes | Sort-Object) -join ',')) 'Mochi Cat ICO layers must be 16, 24, 32, 48, 64, 128, and 256 pixels.'
 
 [pscustomobject]@{
     ok = $true
