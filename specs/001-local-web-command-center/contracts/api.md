@@ -101,11 +101,21 @@ Returns supported targets only.
     "label": "Temp nguoi dung",
     "path": "%TEMP%",
     "risk": "low",
+    "action": "filesystem",
+    "deepOnly": false,
+    "safeMinAgeMinutes": 1440,
+    "deepMinAgeMinutes": 60,
+    "includePatterns": ["*"],
+    "excludePathSegments": [],
     "estimatedBytes": 1288490188,
+    "estimatedFileCount": 1820,
+    "estimateComplete": true,
     "requiresConfirmation": false
   }
 ]
 ```
+
+There are 15 supported targets. `action` is one of `filesystem`, `recycle-bin`, `delivery-optimization`, `component-store`, or `windows-update-downloads`. The `windows-update-downloads` target is high-risk, confirmation-required, Deep-only, and always resolves `%SystemRoot%\SoftwareDistribution\Download` on the server. Clients cannot provide a deletion path. The action deletes only children of that guarded root and restores the original running/stopped state of `wuauserv` and `BITS`.
 
 ## POST /api/cleanup/run
 
@@ -118,6 +128,8 @@ Body:
   "confirmed": true
 }
 ```
+
+Deep-only targets are rejected unless `deep` is `true`. Risky targets and every Deep job require `confirmed: true`.
 
 Response:
 
@@ -159,20 +171,6 @@ Streams or returns log events.
   "message": "Deleted file"
 }
 ```
-
-## POST /api/npm/scan
-
-Body:
-
-```json
-{
-  "root": "D:\\Projects",
-  "maxDepth": 6,
-  "ignore": ["node_modules", ".git", "dist", "build"]
-}
-```
-
-Returns a job id. Scanner must be report-only.
 
 ## GET /api/tasks/auto-dns
 

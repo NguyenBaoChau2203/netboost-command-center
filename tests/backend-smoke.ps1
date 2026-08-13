@@ -10,7 +10,13 @@ $launcher = Join-Path $repoRoot 'NetBoost_Command_Center.bat'
 $expectedVersion = '1.0.1'
 
 if ($Port -le 0) {
-    $Port = 47800 + (Get-Random -Minimum 100 -Maximum 800)
+    $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    try {
+        $portProbe.Start()
+        $Port = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    } finally {
+        $portProbe.Stop()
+    }
 }
 
 function Invoke-RawHttpRequest {
@@ -68,7 +74,17 @@ function Assert-True {
 }
 
 $scriptPath = Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'
-$proc = Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$scriptPath`"", '--web', '--port', "$Port") -WorkingDirectory $repoRoot -WindowStyle Hidden -PassThru
+$startInfo = New-Object System.Diagnostics.ProcessStartInfo
+$startInfo.FileName = 'powershell.exe'
+$startInfo.Arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}" --web --port {1}' -f $scriptPath.Replace('"', '\"'), $Port
+$startInfo.WorkingDirectory = $repoRoot
+$startInfo.UseShellExecute = $false
+$startInfo.CreateNoWindow = $true
+$proc = New-Object System.Diagnostics.Process
+$proc.StartInfo = $startInfo
+if (-not $proc.Start()) {
+    throw 'Failed to start the local backend process.'
+}
 
 try {
     $base = "http://127.0.0.1:$Port"
@@ -112,7 +128,12 @@ try {
     $dashboard = Invoke-RestMethod -Uri "$base/api/dashboard" -Method Get -Headers $authHeaders -TimeoutSec 10
     Assert-True ($null -ne $dashboard.dns) 'Dashboard DNS object missing.'
 
-    $targets = @(Invoke-RestMethod -Uri "$base/api/cleanup/targets" -Method Get -Headers $authHeaders -TimeoutSec 10)
+    # Cold scans of a large user Temp tree can exceed ten seconds while still
+    # respecting the backend's bounded estimate contract.
+    $targets = @(Invoke-RestMethod -Uri "$base/api/cleanup/targets" -Method Get -Headers $authHeaders -TimeoutSec 30)
+    if ($targets.Count -eq 1 -and $targets[0] -is [Array]) {
+        $targets = @($targets[0])
+    }
     $expectedIds = @(
         'user-temp',
         'windows-temp',
@@ -123,7 +144,9 @@ try {
         'thumbnails',
         'inet-cache',
         'recycle-bin',
-        'windows-update',
+        'component-store',
+        'delivery-optimization',
+        'windows-update-downloads',
         'windows-font-cache',
         'windows-prefetch',
         'windows-error-reports'
@@ -133,6 +156,45 @@ try {
     foreach ($id in $expectedIds) {
         Assert-True ($actualIds -contains $id) "Cleanup target missing: $id"
     }
+    Assert-True (-not ($actualIds -contains 'windows-update')) 'Unsupported raw Windows Update deletion target is still exposed.'
+
+    foreach ($target in $targets) {
+        Assert-True ($target.PSObject.Properties.Name -contains 'action') "Cleanup target '$($target.id)' is missing action metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'deepOnly') "Cleanup target '$($target.id)' is missing deepOnly metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'safeMinAgeMinutes') "Cleanup target '$($target.id)' is missing safeMinAgeMinutes metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'deepMinAgeMinutes') "Cleanup target '$($target.id)' is missing deepMinAgeMinutes metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'estimatedFileCount') "Cleanup target '$($target.id)' is missing estimatedFileCount metadata."
+        Assert-True ($target.PSObject.Properties.Name -contains 'estimateComplete') "Cleanup target '$($target.id)' is missing estimateComplete metadata."
+    }
+
+    $userTemp = $targets | Where-Object { $_.id -eq 'user-temp' }
+    Assert-True ($userTemp.safeMinAgeMinutes -eq 1440) 'User Temp safe mode must preserve files newer than 24 hours.'
+    Assert-True ($userTemp.deepMinAgeMinutes -eq 60) 'User Temp deep mode must preserve files newer than 60 minutes.'
+
+    $prefetch = $targets | Where-Object { $_.id -eq 'windows-prefetch' }
+    Assert-True ($prefetch.deepOnly -eq $true) 'Prefetch must be deep-only.'
+    Assert-True ($prefetch.requiresConfirmation -eq $true) 'Prefetch must require explicit confirmation.'
+    Assert-True ($prefetch.deepMinAgeMinutes -ge 43200) 'Prefetch must preserve at least 30 days of recent data.'
+    Assert-True (@($prefetch.includePatterns) -contains '*.pf') 'Prefetch cleanup must only include .pf files.'
+    Assert-True (@($prefetch.excludePathSegments) -contains 'ReadyBoot') 'Prefetch cleanup must exclude ReadyBoot.'
+
+    $componentStore = $targets | Where-Object { $_.id -eq 'component-store' }
+    Assert-True ($componentStore.action -eq 'component-store') 'Component Store must use the supported DISM action.'
+    Assert-True ($componentStore.deepOnly -eq $true) 'Component Store cleanup must be deep-only.'
+    Assert-True ($componentStore.requiresConfirmation -eq $true) 'Component Store cleanup must require confirmation.'
+
+    $deliveryOptimization = $targets | Where-Object { $_.id -eq 'delivery-optimization' }
+    Assert-True ($deliveryOptimization.action -eq 'delivery-optimization') 'Delivery Optimization must use its supported PowerShell action.'
+
+    $windowsUpdateDownloads = $targets | Where-Object { $_.id -eq 'windows-update-downloads' }
+    Assert-True ($windowsUpdateDownloads.action -eq 'windows-update-downloads') 'Windows Update downloads must use the service-aware action.'
+    Assert-True ($windowsUpdateDownloads.risk -eq 'high') 'Windows Update downloads must be high risk.'
+    Assert-True ($windowsUpdateDownloads.deepOnly -eq $true) 'Windows Update downloads must be deep-only.'
+    Assert-True ($windowsUpdateDownloads.requiresConfirmation -eq $true) 'Windows Update downloads must require confirmation.'
+    Assert-True ($windowsUpdateDownloads.path -like '*SoftwareDistribution\Download') 'Windows Update downloads must expose the expected Windows cache path.'
+    Assert-True ($windowsUpdateDownloads.estimatedBytes -eq 0) 'Windows Update downloads must not enumerate the live cache for an estimate.'
+    Assert-True ($windowsUpdateDownloads.estimatedFileCount -eq 0) 'Windows Update downloads must not count files in the live cache.'
+    Assert-True ($windowsUpdateDownloads.estimateComplete -eq $false) 'Windows Update downloads must report its estimate as unavailable.'
 
     $staticRoot = Invoke-WebRequest -Uri "$base/" -UseBasicParsing -TimeoutSec 5
     Assert-True ($staticRoot.StatusCode -eq 200) 'Static UI root did not respond with 200.'
@@ -156,6 +218,9 @@ try {
         if ($bundle.Content.Contains('1.2.0')) {
             $releaseMismatches.Add("Static UI bundle still contains stale release marker '1.2.0'.")
         }
+        if ($bundle.Content.Contains('npm-pnpm')) {
+            $releaseMismatches.Add("Static UI bundle still exposes the removed npm-to-pnpm feature.")
+        }
     }
 
     Assert-True ($releaseMismatches.Count -eq 0) ("Release version mismatch: {0}" -f ($releaseMismatches -join ' '))
@@ -176,20 +241,11 @@ try {
         maxDepth = 2
         ignore = @('node_modules', '.git', 'dist', 'build')
     } | ConvertTo-Json -Compress
-    $scan = Invoke-RestMethod -Uri "$base/api/npm/scan" -Method Post -Headers $authHeaders -ContentType 'application/json' -Body $scanBody -TimeoutSec 20
-    Assert-True (-not [string]::IsNullOrWhiteSpace($scan.jobId)) 'npm scan did not return a jobId.'
-    $scanJob = $null
-    $scanEvents = @()
-    for ($i = 0; $i -lt 80; $i++) {
-        Start-Sleep -Milliseconds 250
-        $scanJob = Invoke-RestMethod -Uri "$base/api/jobs/$($scan.jobId)" -Method Get -Headers $authHeaders -TimeoutSec 5
-        $scanEvents = @((Invoke-RestMethod -Uri "$base/api/jobs/$($scan.jobId)/events" -Method Get -Headers $authHeaders -TimeoutSec 5) | ForEach-Object { $_ })
-        if ($scanJob.status -eq 'completed' -or $scanJob.status -eq 'failed') {
-            break
-        }
-    }
-    Assert-True ($scanJob.status -eq 'completed') 'npm scan job did not complete.'
-    Assert-True ($scanEvents.Count -gt 0) 'npm scan did not emit events.'
+    $removedNpmRoute = Invoke-RawHttpRequest -Method 'POST' -Path '/api/npm/scan' -Body $scanBody -Token $token
+    Assert-True ($removedNpmRoute.StatusCode -eq 404) 'Removed npm scan route did not return 404.'
+
+    $helpOutput = (& 'powershell.exe' -NoProfile -ExecutionPolicy Bypass -File $scriptPath '--help' 2>&1 | Out-String)
+    Assert-True (-not $helpOutput.Contains('--scan-npm')) 'CLI help still advertises the removed npm scan mode.'
 
     [pscustomobject]@{
         ok = $true
@@ -198,9 +254,8 @@ try {
         isAdmin = $health.isAdmin
         cleanupTargets = $actualIds.Count
         adminGuard = $adminGuardStatus
-        npmScanStatus = $scanJob.status
-        npmProjectsFound = $scanJob.projectsFound
-        npmEvents = $scanEvents.Count
+        npmScanRoute = 'removed'
+        npmScanCli = 'removed'
     } | ConvertTo-Json -Depth 6
 } finally {
     if ($proc -and -not $proc.HasExited) {

@@ -1,5 +1,6 @@
 .playwright-cli/
 .codegraph/
+/.pnpm-store/
 .gitnexus/
 .history-backup/
 .superpowers/
@@ -15,3 +16,4 @@ node_modules/
 *.temp
 Thumbs.db
 Desktop.ini
+/NetBoost Command Center.lnk

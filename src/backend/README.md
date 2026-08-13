@@ -19,6 +19,8 @@ Behavior:
 - Uses in-memory job snapshots and `/api/jobs/{jobId}/events` polling.
 - Returns `adminRequired: true` for privileged actions when the launcher is not elevated.
 - Uses `HttpListener` when available, with a local `TcpListener` fallback for environments where `HttpListener` is unsupported.
+- Exposes 15 cleanup targets. `windows-update-downloads` is high-risk, confirmation-required, Deep-only, and resolves its fixed path from `%SystemRoot%` rather than accepting a client path.
+- Runs Windows Update download cleanup inside a `wuauserv`/`BITS` service-state transaction and restores only services that were originally running.
 
 Frontend adapter:
 

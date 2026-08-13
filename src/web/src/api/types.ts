@@ -54,7 +54,15 @@ export interface CleanupTarget {
   label: string;
   path: string;
   risk: 'low' | 'medium' | 'high';
+  action: 'filesystem' | 'recycle-bin' | 'delivery-optimization' | 'component-store' | 'windows-update-downloads';
+  deepOnly: boolean;
+  safeMinAgeMinutes: number;
+  deepMinAgeMinutes: number;
+  includePatterns: string[];
+  excludePathSegments: string[];
   estimatedBytes: number;
+  estimatedFileCount: number;
+  estimateComplete: boolean;
   requiresConfirmation: boolean;
   description?: string;
 }
@@ -68,38 +76,6 @@ export interface JobState {
   dirsDeleted: number;
   locked: number;
   reclaimedBytes: number;
-}
-
-export interface NpmScanRequest {
-  root: string;
-  maxDepth: number;
-  ignore: string[];
-}
-
-export interface NpmProject {
-  path: string;
-  lockfile: string;
-  nodeModulesSize: number;
-  recommendation: string;
-  status: 'ready' | 'needs_config' | 'completed';
-  suggestions: string[];
-}
-
-export interface NpmScanResponse {
-  jobId: string;
-  status: string;
-}
-
-export interface NpmScanJobState {
-  jobId: string;
-  status: 'queued' | 'running' | 'completed' | 'failed';
-  progress: number;
-  projectsFound: number;
-  totalNodeModulesBytes: number;
-  packageLockCount: number;
-  expectedSavingsBytes: number;
-  projects: NpmProject[];
-  logs: LogEvent[];
 }
 
 export interface SettingsState {

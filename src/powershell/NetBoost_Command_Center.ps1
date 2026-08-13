@@ -7,7 +7,6 @@ $AppName = 'NetBoost Command Center'
 $TaskName = 'NetBoost Auto DNS Optimizer'
 $ScriptPath = $PSCommandPath
 $RawArgs = @($args)
-$DefaultScanRoot = $env:USERPROFILE
 $UseFancyUi = $false
 $UseAsciiUi = -not $UseFancyUi
 
@@ -30,7 +29,7 @@ for ($i = 0; $i -lt $RawArgs.Count; $i++) {
 # Translation Dictionary (Localizations strictly in clean, accentless strings)
 $T = @{}
 if ($Language -eq 'EN') {
-    $T.HeaderSubtitle = "Quick view: dashboard does not auto-run, view it by selecting option 16."
+    $T.HeaderSubtitle = "Quick view: dashboard does not auto-run, view it by selecting option 15."
     $T.NetworkSec     = "Network / DNS"
     $T.CleanupSec     = "Cleanup"
     $T.ToolsSec       = "Tools"
@@ -47,16 +46,15 @@ if ($Language -eq 'EN') {
     $T.Menu6  = "Remove scheduled task for Auto DNS"
     $T.Menu7  = "Flush DNS cache"
     $T.Menu8  = "Reset DNS to DHCP/Auto"
-    $T.Menu9  = "Clear ALL system caches & Recycle Bin"
-    $T.Menu10 = "Clean Windows & User temporary files"
+    $T.Menu9  = "Open CLI Cleanup Center (Safe / Advanced)"
+    $T.Menu10 = "Clean Windows & User Temp files older than 24 hours"
     $T.Menu11 = "Clean Game & Graphics cache"
-    $T.Menu12 = "Clean System cache"
-    $T.Menu13 = "Empty Recycle Bin"
+    $T.Menu12 = "Clean basic Windows system cache"
+    $T.Menu13 = "Empty Recycle Bin (confirmation required)"
     $T.Menu14 = "Open Chris Titus WinUtil"
-    $T.Menu15 = "Scan npm projects for pnpm migration"
-    $T.Menu16 = "View telemetry Dashboard"
-    $T.Menu17 = "Switch interface language to Vietnamese"
-    $T.Menu18 = "Open Web UI (local browser)"
+    $T.Menu15 = "View telemetry Dashboard"
+    $T.Menu16 = "Switch interface language to Vietnamese"
+    $T.Menu17 = "Open Web UI (local browser)"
     $T.Menu0  = "Exit program"
 
     # Task Outputs & Alerts
@@ -90,7 +88,6 @@ if ($Language -eq 'EN') {
     $T.WinUtilWarn    = "WARNING: This will download and run winutil from GitHub."
     $T.WinUtilSource  = "Source: https://github.com/ChrisTitusTech/winutil"
     $T.ConfirmPrompt  = "Continue? Enter y to confirm (y/n)"
-    $T.ConfirmAll     = "This clears ALL caches + Recycle Bin. Continue? (y/n)"
     $T.ActionSkipped  = "Operation skipped."
     $T.OpeningWinUtil = "Opening Chris Titus WinUtil..."
 
@@ -108,30 +105,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin is empty or some items are locked."
 
     $T.DashHead       = "NETBOOST DASHBOARD"
-    $T.ScanHead       = "NPM TO PNPM MIGRATION SCAN"
-    $T.ScanInfo       = "This mode scans and reports only. No files are deleted."
-    $T.ScanNodeMissing = "Node : not found in PATH"
-    $T.ScanNpmMissing  = "npm  : not found in PATH"
-    $T.ScanPnpmMissing = "pnpm : not found in PATH"
-    $T.ScanGlobalRoot = "Global root"
-    $T.ScanCacheSize  = "Cache size"
-    $T.ScanGlobalHead = "NPM GLOBAL CONFIG"
-    $T.ScanGlobPack   = "NPM GLOBAL PACKAGES"
-    $T.ScanNoPack     = "No global packages found."
-    $T.ScanReadError  = "Failed to read npm global packages list."
-    $T.ScanProjRoot   = "PROJECT SCAN - Root: {0}"
-    $T.ScanProjNone   = "No Node/npm projects found in this root."
-    $T.ScanProjFound  = "Found: {0} Node-related projects/folders"
-    $T.ScanScanned    = "Folders scanned"
-    $T.ScanLimit      = "Warning: hit 50000 limit, please scan smaller paths."
-    $T.ScanMoreItems  = "... and {0} more items"
-
-    $T.MigrateHead    = "MIGRATION ADVICE"
-    $T.MigrateLock    = "Projects with package-lock/shrinkwrap"
-    $T.MigrateNm      = "Projects with node_modules"
-    $T.MigrateStep1   = "In each project folder: run 'pnpm import', then run 'pnpm install'."
-    $T.MigrateStep2   = "Global tools: reinstall using 'pnpm add -g <package-name>' when needed."
-    $T.MigrateStep3   = "Safe tip: only delete node_modules/package-lock manually after verifying builds."
     $T.WebStarting      = "Starting local Web UI backend server..."
     $T.WebRunning       = "NetBoost Command Center local backend is running."
     $T.WebBrowserOpen   = "Opening your default web browser..."
@@ -139,9 +112,46 @@ if ($Language -eq 'EN') {
     $T.WebKeepOpen      = "Keep this command prompt window open while using the Web UI."
     $T.WebAccessAt      = "You can access the Web UI at: {0}"
     $T.WebPressToStop   = "Press Q or ESC to stop the Web UI and return to the main CLI menu."
+
+    $T.CliCleanupTitle = "CLI CLEANUP CENTER"
+    $T.CliCleanupSafe = "SAFE CLEANUP"
+    $T.CliCleanupConfirmed = "CONFIRMATION REQUIRED"
+    $T.CliCleanupAdvanced = "ADVANCED CLEANUP"
+    $T.CliCleanupBack = "Back to main menu"
+    $T.CliCleanupScope = "Scope"
+    $T.CliCleanupRisk = "Risk"
+    $T.CliCleanupRetention = "Retention"
+    $T.CliCleanupRiskLow = "Low"
+    $T.CliCleanupRiskMedium = "Medium"
+    $T.CliCleanupRiskHigh = "High"
+    $T.CliCleanupRetentionPolicy = "Per-target safe policy"
+    $T.CliCleanupRetention24Hours = "Preserves files newer than 24 hours"
+    $T.CliCleanupRetention30Days = "Preserves .pf files newer than 30 days"
+    $T.CliCleanupNoAgeRule = "No age filter; target-specific supported action"
+    $T.CliCleanupYesPrompt = "Continue? Enter y to confirm (y/n)"
+    $T.CliCleanupAdvancedPrompt = "Type CONFIRM exactly to continue"
+    $T.CliCleanupFailed = "Cleanup action failed"
+    $T.CliCleanupAction1 = "User & Windows Temp files (>24 hours)"
+    $T.CliCleanupAction2 = "Game & Graphics caches"
+    $T.CliCleanupAction3 = "Basic Windows caches"
+    $T.CliCleanupAction4 = "Run recommended safe cleanup"
+    $T.CliCleanupAction5 = "Application crash dumps"
+    $T.CliCleanupAction6 = "Empty Recycle Bin"
+    $T.CliCleanupAction7 = "Windows Component Store (DISM)"
+    $T.CliCleanupAction8 = "Windows Update downloads"
+    $T.CliCleanupAction9 = "Old Windows Prefetch files (.pf >30 days)"
+    $T.CliCleanupDescription1 = "Deletes only User and Windows temporary files older than 24 hours."
+    $T.CliCleanupDescription2 = "Deletes rebuildable DirectX, NVIDIA, and discovered Steam shader caches."
+    $T.CliCleanupDescription3 = "Deletes thumbnails, INetCache, Delivery Optimization, Font Cache, and old Windows Error Reports."
+    $T.CliCleanupDescription4 = "Runs actions 1, 2, and 3 only; excludes Recycle Bin, crash dumps, and every advanced target."
+    $T.CliCleanupDescription5 = "Removes application crash evidence; keep it when diagnosing a crash."
+    $T.CliCleanupDescription6 = "Permanently removes the current contents of Windows Recycle Bin."
+    $T.CliCleanupDescription7 = "Uses DISM /StartComponentCleanup; ResetBase is never used."
+    $T.CliCleanupDescription8 = "Clears only SoftwareDistribution\Download and restores the original Windows Update service states."
+    $T.CliCleanupDescription9 = "Deletes only .pf files older than 30 days; ReadyBoot and Layout.ini are preserved."
 } else {
     # Default: VI (Vietnamese without accents)
-    $T.HeaderSubtitle = "Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 16."
+    $T.HeaderSubtitle = "Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15."
     $T.NetworkSec     = "Network / DNS"
     $T.CleanupSec     = "Cleanup"
     $T.ToolsSec       = "Tools"
@@ -158,16 +168,15 @@ if ($Language -eq 'EN') {
     $T.Menu6  = "Xoa lich auto DNS"
     $T.Menu7  = "Xoa bo nho dem DNS (Flush DNS)"
     $T.Menu8  = "Dat lai DNS ve DHCP/Auto"
-    $T.Menu9  = "Xoa TAT CA bo nho dem (Cache)"
-    $T.Menu10 = "Don dep tep tin tam Windows & Nguoi dung"
+    $T.Menu9  = "Mo Trung tam don dep CLI (An toan / Nang cao)"
+    $T.Menu10 = "Don tep tam Windows & Nguoi dung cu hon 24 gio"
     $T.Menu11 = "Don dep bo nho dem Game & Do hoa"
-    $T.Menu12 = "Don dep bo nho dem He thong"
-    $T.Menu13 = "Lam trong Thung rac (Recycle Bin)"
+    $T.Menu12 = "Don cache Windows co ban"
+    $T.Menu13 = "Lam trong Thung rac (can xac nhan)"
     $T.Menu14 = "Mo Chris Titus WinUtil"
-    $T.Menu15 = "Quet cac du an npm de chuyen sang pnpm"
-    $T.Menu16 = "Xem bang thong tin (Dashboard)"
-    $T.Menu17 = "Switch interface language to English"
-    $T.Menu18 = "Mo giao dien Web UI (trinh duyet local)"
+    $T.Menu15 = "Xem bang thong tin (Dashboard)"
+    $T.Menu16 = "Switch interface language to English"
+    $T.Menu17 = "Mo giao dien Web UI (trinh duyet local)"
     $T.Menu0  = "Thoat chuong trinh"
 
     # Task Outputs & Alerts
@@ -201,7 +210,6 @@ if ($Language -eq 'EN') {
     $T.WinUtilWarn    = "CANH BAO: Lenh nay se tai va chay script tu GitHub (winutil)."
     $T.WinUtilSource  = "Nguon: https://github.com/ChrisTitusTech/winutil"
     $T.ConfirmPrompt  = "Tiep tuc? Nhap y de xac nhan (y/n)"
-    $T.ConfirmAll     = "Hanh dong nay se xoa sach cache + Recycle Bin. Tiep tuc? (y/n)"
     $T.ActionSkipped  = "Da huy thao tac."
     $T.OpeningWinUtil = "Dang mo Chris Titus WinUtil..."
 
@@ -219,30 +227,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin trong hoac co muc dang bi khoa."
 
     $T.DashHead       = "BANG THONG TIN (NETBOOST DASHBOARD)"
-    $T.ScanHead       = "QUET DU AN NPM SANG PNPM (NPM TO PNPM SCAN)"
-    $T.ScanInfo       = "Che do nay chi quet va bao cao, khong xoa file."
-    $T.ScanNodeMissing = "Node : chua tim thay trong PATH"
-    $T.ScanNpmMissing  = "npm  : chua tim thay trong PATH"
-    $T.ScanPnpmMissing = "pnpm : chua tim thay trong PATH"
-    $T.ScanGlobalRoot = "Global root"
-    $T.ScanCacheSize  = "Cache size"
-    $T.ScanGlobalHead = "CAU HINH NPM GLOBAL / CACHE"
-    $T.ScanGlobPack   = "THU VIEN NPM GLOBAL PACKAGES"
-    $T.ScanNoPack     = "Khong thay package global nao."
-    $T.ScanReadError  = "Khong doc duoc danh sach npm global packages."
-    $T.ScanProjRoot   = "QUET DU AN / PROJECT SCAN - Thu muc: {0}"
-    $T.ScanProjNone   = "Khong thay dau vet npm/project Node nao trong thu muc nay."
-    $T.ScanProjFound  = "Tim thay: {0} project/thu muc lien quan Node"
-    $T.ScanScanned    = "Da quet"
-    $T.ScanLimit      = "Canh bao: dat gioi han 50000 thu muc, nen quet tung thu muc nho hon."
-    $T.ScanMoreItems  = "... con {0} muc nua"
-
-    $T.MigrateHead    = "GOI Y CHUYEN DOI / MIGRATE ADVICE"
-    $T.MigrateLock    = "Project co package-lock/npm-shrinkwrap"
-    $T.MigrateNm      = "Project co node_modules"
-    $T.MigrateStep1   = "Trong tung project: chay 'pnpm import', sau do pnpm install."
-    $T.MigrateStep2   = "Global tool: cai lai bang pnpm add -g <ten-package> khi can."
-    $T.MigrateStep3   = "Sau khi test OK moi tu tay xoa node_modules/package-lock de giai phong dung luong."
     $T.WebStarting      = "Dang khoi dong server Web UI local..."
     $T.WebRunning       = "NetBoost Command Center local backend dang hoat dong."
     $T.WebBrowserOpen   = "Dang tu dong mo trinh duyet..."
@@ -250,6 +234,43 @@ if ($Language -eq 'EN') {
     $T.WebKeepOpen      = "Giu nguyen cua so nay (command prompt) khi dang dung Web UI."
     $T.WebAccessAt      = "Ban co the truy cap Web UI tai: {0}"
     $T.WebPressToStop   = "Nhan phim Q hoac ESC de dung Web UI va quay lai menu."
+
+    $T.CliCleanupTitle = "TRUNG TAM DON DEP CLI"
+    $T.CliCleanupSafe = "DON DEP AN TOAN"
+    $T.CliCleanupConfirmed = "CAN XAC NHAN"
+    $T.CliCleanupAdvanced = "DON DEP NANG CAO"
+    $T.CliCleanupBack = "Quay lai menu chinh"
+    $T.CliCleanupScope = "Pham vi"
+    $T.CliCleanupRisk = "Muc do rui ro"
+    $T.CliCleanupRetention = "Quy tac luu giu"
+    $T.CliCleanupRiskLow = "Thap"
+    $T.CliCleanupRiskMedium = "Trung binh"
+    $T.CliCleanupRiskHigh = "Cao"
+    $T.CliCleanupRetentionPolicy = "Theo chinh sach an toan cua tung muc"
+    $T.CliCleanupRetention24Hours = "Giu lai tep moi hon 24 gio"
+    $T.CliCleanupRetention30Days = "Giu lai tep .pf moi hon 30 ngay"
+    $T.CliCleanupNoAgeRule = "Khong loc theo tuoi tep; dung tac vu Windows duoc ho tro"
+    $T.CliCleanupYesPrompt = "Tiep tuc? Nhap y de xac nhan (y/n)"
+    $T.CliCleanupAdvancedPrompt = "Nhap chinh xac CONFIRM de tiep tuc"
+    $T.CliCleanupFailed = "Tac vu don dep that bai"
+    $T.CliCleanupAction1 = "Tep tam Nguoi dung & Windows (>24 gio)"
+    $T.CliCleanupAction2 = "Cache Game & Do hoa"
+    $T.CliCleanupAction3 = "Cache Windows co ban"
+    $T.CliCleanupAction4 = "Chay nhom don dep an toan de xuat"
+    $T.CliCleanupAction5 = "Crash dumps cua ung dung"
+    $T.CliCleanupAction6 = "Lam trong Thung rac"
+    $T.CliCleanupAction7 = "Windows Component Store (DISM)"
+    $T.CliCleanupAction8 = "Windows Update downloads"
+    $T.CliCleanupAction9 = "Windows Prefetch cu (.pf >30 ngay)"
+    $T.CliCleanupDescription1 = "Chi xoa tep tam Nguoi dung va Windows cu hon 24 gio."
+    $T.CliCleanupDescription2 = "Xoa cache shader DirectX, NVIDIA va Steam da tim thay; Windows/Game co the tao lai."
+    $T.CliCleanupDescription3 = "Xoa thumbnail, INetCache, Delivery Optimization, Font Cache va bao cao loi Windows cu."
+    $T.CliCleanupDescription4 = "Chi chay muc 1, 2 va 3; khong gom Thung rac, crash dumps hay bat ky muc nang cao nao."
+    $T.CliCleanupDescription5 = "Xoa du lieu chan doan loi ung dung; nen giu lai khi dang dieu tra crash."
+    $T.CliCleanupDescription6 = "Xoa vinh vien noi dung hien tai trong Thung rac Windows."
+    $T.CliCleanupDescription7 = "Dung DISM /StartComponentCleanup; khong bao gio dung ResetBase."
+    $T.CliCleanupDescription8 = "Chi don SoftwareDistribution\Download va khoi phuc trang thai dich vu Windows Update ban dau."
+    $T.CliCleanupDescription9 = "Chi xoa tep .pf cu hon 30 ngay; giu nguyen ReadyBoot va Layout.ini."
 }
 
 $Providers = @{
@@ -329,7 +350,6 @@ function Get-UiIcon {
             'GameCache'    { return '[Game]' }
             'SysCache'     { return '[Sys]' }
             'WinUtil'      { return '[Tool]' }
-            'NpmScan'      { return '[Npm]' }
             'Dashboard'    { return '[Dash]' }
             'Web'          { return '[Web]' }
             'Exit'         { return '[Exit]' }
@@ -360,7 +380,6 @@ function Get-UiIcon {
             'GameCache'    { return '🎮' }
             'SysCache'     { return '⚙️' }
             'WinUtil'      { return '🛠️' }
-            'NpmScan'      { return '📦' }
             'Dashboard'    { return '📊' }
             'Web'          { return '🌐' }
             'Exit'         { return '🚪' }
@@ -783,16 +802,142 @@ function Open-ChrisTitus {
     Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -Command "irm https://christitus.com/win | iex"' -Verb RunAs
 }
 
+function Get-NormalizedCleanupPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return $null
+    }
+
+    try {
+        $fullPath = [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($Path))
+        return $fullPath.TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    } catch {
+        return $null
+    }
+}
+
+function Test-SafeCleanupRoot {
+    param([string]$Path)
+
+    $fullPath = Get-NormalizedCleanupPath -Path $Path
+    if ([string]::IsNullOrWhiteSpace($fullPath) -or -not (Test-Path -LiteralPath $fullPath -PathType Container)) {
+        return $false
+    }
+
+    try {
+        $rootItem = Get-Item -LiteralPath $fullPath -Force -ErrorAction Stop
+        if (($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            return $false
+        }
+    } catch {
+        return $false
+    }
+
+    $driveRoot = Get-NormalizedCleanupPath -Path ([IO.Path]::GetPathRoot($fullPath))
+    if ([string]::Equals($fullPath, $driveRoot, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    $protectedRoots = @($env:USERPROFILE, $env:WINDIR, $env:SystemRoot)
+    foreach ($protectedRoot in $protectedRoots) {
+        $normalizedProtectedRoot = Get-NormalizedCleanupPath -Path $protectedRoot
+        if (-not [string]::IsNullOrWhiteSpace($normalizedProtectedRoot) -and
+            [string]::Equals($fullPath, $normalizedProtectedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+
+    return $true
+}
+
+function Test-CleanupCandidatePath {
+    param(
+        [string]$Root,
+        [string]$Candidate
+    )
+
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Root
+    $normalizedCandidate = Get-NormalizedCleanupPath -Path $Candidate
+    if ([string]::IsNullOrWhiteSpace($normalizedRoot) -or [string]::IsNullOrWhiteSpace($normalizedCandidate)) {
+        return $false
+    }
+
+    $rootPrefix = $normalizedRoot + [IO.Path]::DirectorySeparatorChar
+    if (-not $normalizedCandidate.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        return $false
+    }
+
+    try {
+        $candidateItem = Get-Item -LiteralPath $normalizedCandidate -Force -ErrorAction Stop
+        $current = if ($candidateItem.PSIsContainer) { $candidateItem } else { $candidateItem.Directory }
+        while ($null -ne $current -and
+            -not [string]::Equals($current.FullName.TrimEnd('\'), $normalizedRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            if (($current.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+                return $false
+            }
+            $current = $current.Parent
+        }
+    } catch {
+        return $false
+    }
+
+    return $true
+}
+
+function Test-CleanupFileEligible {
+    param(
+        [IO.FileInfo]$FileInfo,
+        [string]$Root,
+        [int]$MinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @()
+    )
+
+    if ($null -eq $FileInfo -or
+        ($FileInfo.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        -not (Test-CleanupCandidatePath -Root $Root -Candidate $FileInfo.FullName)) {
+        return $false
+    }
+
+    if ($MinAgeMinutes -gt 0 -and $FileInfo.LastWriteTime -ge (Get-Date).AddMinutes(-$MinAgeMinutes)) {
+        return $false
+    }
+
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Root
+    $relativePath = $FileInfo.FullName.Substring($normalizedRoot.Length).TrimStart('\', '/')
+    $pathSegments = @($relativePath -split '[\\/]+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    foreach ($excludedSegment in @($ExcludePathSegments)) {
+        if (-not [string]::IsNullOrWhiteSpace($excludedSegment) -and $pathSegments -contains $excludedSegment) {
+            return $false
+        }
+    }
+
+    $patterns = @($IncludePatterns | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    if ($patterns.Count -eq 0) {
+        $patterns = @('*')
+    }
+
+    foreach ($pattern in $patterns) {
+        if ($FileInfo.Name -like $pattern) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Remove-FolderContents {
     param(
         [string]$Path,
         [string]$Label,
         [int]$MinAgeMinutes = 0,
+        [string[]]$IncludePatterns = @('*'),
+        [string[]]$ExcludePathSegments = @(),
         [string]$TargetId = '',
         [string]$JobId = ''
     )
 
-    Ensure-Admin
     $filesDeleted = 0
     $dirsDeleted = 0
     $filesFailed = 0
@@ -807,13 +952,17 @@ function Remove-FolderContents {
         return
     }
 
-    $cutoff = if ($MinAgeMinutes -gt 0) { (Get-Date).AddMinutes(-$MinAgeMinutes) } else { $null }
+    if (-not (Test-SafeCleanupRoot -Path $Path)) {
+        $message = "Unsafe cleanup root rejected: $Path"
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $Path -Message $message -JobId $JobId
+        throw $message
+    }
+
+    Ensure-Admin
+    $normalizedRoot = Get-NormalizedCleanupPath -Path $Path
 
     $files = Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
-        Where-Object {
-            ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and
-            ($null -eq $cutoff -or $_.LastWriteTime -lt $cutoff)
-        }
+        Where-Object { Test-CleanupFileEligible -FileInfo $_ -Root $normalizedRoot -MinAgeMinutes $MinAgeMinutes -IncludePatterns $IncludePatterns -ExcludePathSegments $ExcludePathSegments }
     foreach ($file in $files) {
         try {
             $bytes = [int64]$file.Length
@@ -831,9 +980,17 @@ function Remove-FolderContents {
         }
     }
 
-    $dirs = Get-ChildItem -LiteralPath $Path -Force -Directory -Recurse -ErrorAction SilentlyContinue |
-        Where-Object { ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 } |
-        Sort-Object { $_.FullName.Length } -Descending
+    $removeEmptyDirs = @($IncludePatterns).Count -eq 1 -and $IncludePatterns[0] -eq '*'
+    $dirs = if ($removeEmptyDirs) {
+        @(Get-ChildItem -LiteralPath $Path -Force -Directory -Recurse -ErrorAction SilentlyContinue |
+            Where-Object {
+                ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0 -and
+                (Test-CleanupCandidatePath -Root $normalizedRoot -Candidate $_.FullName)
+            } |
+            Sort-Object { $_.FullName.Length } -Descending)
+    } else {
+        @()
+    }
 
     foreach ($dir in $dirs) {
         $remaining = @(Get-ChildItem -LiteralPath $dir.FullName -Force -ErrorAction SilentlyContinue)
@@ -873,9 +1030,143 @@ function Remove-FolderContents {
     Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $Label -Path $Path -Message ("FilesDeleted={0};DirsDeleted={1};SkippedOrFailedFiles={2};SkippedOrFailedDirs={3}" -f $filesDeleted, $dirsDeleted, $filesFailed, $dirsFailed) -JobId $JobId
 }
 
+function Get-CliCleanupActionDefinitions {
+    return @(
+        [pscustomobject]@{ key = '1'; section = 'safe'; label = $T.CliCleanupAction1; description = $T.CliCleanupDescription1; targetIds = @('user-temp', 'windows-temp'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskLow; retention = $T.CliCleanupRetention24Hours }
+        [pscustomobject]@{ key = '2'; section = 'safe'; label = $T.CliCleanupAction2; description = $T.CliCleanupDescription2; targetIds = @('directx-cache', 'nvidia-cache', 'steam-cache'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '3'; section = 'safe'; label = $T.CliCleanupAction3; description = $T.CliCleanupDescription3; targetIds = @('thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskLow; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '4'; section = 'safe'; label = $T.CliCleanupAction4; description = $T.CliCleanupDescription4; targetIds = @('user-temp', 'windows-temp', 'directx-cache', 'nvidia-cache', 'steam-cache', 'thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports'); deep = $false; confirmation = 'none'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetentionPolicy }
+        [pscustomobject]@{ key = '5'; section = 'confirmed'; label = $T.CliCleanupAction5; description = $T.CliCleanupDescription5; targetIds = @('crash-dumps'); deep = $false; confirmation = 'y'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '6'; section = 'confirmed'; label = $T.CliCleanupAction6; description = $T.CliCleanupDescription6; targetIds = @('recycle-bin'); deep = $false; confirmation = 'y'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '7'; section = 'advanced'; label = $T.CliCleanupAction7; description = $T.CliCleanupDescription7; targetIds = @('component-store'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '8'; section = 'advanced'; label = $T.CliCleanupAction8; description = $T.CliCleanupDescription8; targetIds = @('windows-update-downloads'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskHigh; retention = $T.CliCleanupNoAgeRule }
+        [pscustomobject]@{ key = '9'; section = 'advanced'; label = $T.CliCleanupAction9; description = $T.CliCleanupDescription9; targetIds = @('windows-prefetch'); deep = $true; confirmation = 'CONFIRM'; risk = $T.CliCleanupRiskMedium; retention = $T.CliCleanupRetention30Days }
+    )
+}
+
+function Write-CliCleanupActionDetails {
+    param([pscustomobject]$Action)
+
+    Write-UiHeader $Action.label 'Cleanup'
+    Write-Line $Action.description Gray
+    Write-Line ''
+    Write-Line ("{0}:" -f $T.CliCleanupScope) Cyan
+
+    $definitions = @(Get-CleanupTargetDefinitions)
+    foreach ($targetId in @($Action.targetIds)) {
+        $target = $definitions | Where-Object { $_.id -eq $targetId } | Select-Object -First 1
+        if ($null -ne $target) {
+            Write-Line ("  - {0}: {1}" -f $target.label, $target.path) Gray
+        }
+    }
+
+    Write-Line ("{0}: {1}" -f $T.CliCleanupRisk, $Action.risk) Yellow
+    Write-Line ("{0}: {1}" -f $T.CliCleanupRetention, $Action.retention) DarkGray
+    Write-Line ''
+}
+
+function Invoke-CliCleanupSelection {
+    param(
+        [string]$Choice,
+        [scriptblock]$ReadInput = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    if ($Choice -eq '0') {
+        return 'back'
+    }
+
+    $action = Get-CliCleanupActionDefinitions | Where-Object { $_.key -eq $Choice } | Select-Object -First 1
+    if ($null -eq $action) {
+        return 'invalid'
+    }
+
+    Write-CliCleanupActionDetails -Action $action
+    $confirmed = $false
+    switch ($action.confirmation) {
+        'y' {
+            $answer = [string](& $ReadInput $T.CliCleanupYesPrompt)
+            if ($answer.ToLowerInvariant() -ne 'y') {
+                Write-Status Warning $T.ActionSkipped
+                return 'cancelled'
+            }
+            $confirmed = $true
+        }
+        'CONFIRM' {
+            $answer = [string](& $ReadInput $T.CliCleanupAdvancedPrompt)
+            if ($answer -cne 'CONFIRM') {
+                Write-Status Warning $T.ActionSkipped
+                return 'cancelled'
+            }
+            $confirmed = $true
+        }
+    }
+
+    & $CleanupInvoker ([string[]]$action.targetIds) ([bool]$action.deep) $confirmed | Out-Null
+    return 'completed'
+}
+
+function Show-CleanupCenter {
+    param(
+        [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        },
+        [scriptblock]$PauseAction = { Pause-Back }
+    )
+
+    while ($true) {
+        Write-Header
+        Write-UiHeader $T.CliCleanupTitle 'Cleanup'
+        $actions = @(Get-CliCleanupActionDefinitions)
+
+        Write-Section $T.CliCleanupSafe Green
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'safe' })) {
+            Write-MenuItem $action.key $action.label Green 'Safe'
+        }
+
+        Write-Section $T.CliCleanupConfirmed Yellow
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'confirmed' })) {
+            Write-MenuItem $action.key $action.label Yellow 'Confirm'
+        }
+
+        Write-Section $T.CliCleanupAdvanced Red
+        foreach ($action in @($actions | Where-Object { $_.section -eq 'advanced' })) {
+            Write-MenuItem $action.key $action.label Red 'Advanced'
+        }
+        Write-MenuItem '0' $T.CliCleanupBack Cyan 'Back'
+        Write-Line ''
+
+        $choice = [string](& $InputReader $T.PromptChoice)
+        try {
+            $result = Invoke-CliCleanupSelection -Choice $choice -ReadInput $InputReader -CleanupInvoker $CleanupInvoker
+            if ($result -eq 'back') {
+                return
+            }
+            if ($result -eq 'invalid') {
+                Write-Status Error $T.InvalidChoice
+            }
+        } catch {
+            Write-Status Error ("{0}: {1}" -f $T.CliCleanupFailed, $_.Exception.Message)
+        }
+
+        & $PauseAction
+    }
+}
+
 function Clean-Temp {
-    Remove-FolderContents -Path $env:TEMP -Label 'Temp cua nguoi dung' -MinAgeMinutes 60 -TargetId 'user-temp'
-    Remove-FolderContents -Path 'C:\Windows\Temp' -Label 'Windows Temp' -MinAgeMinutes 60 -TargetId 'windows-temp'
+    param(
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    & $CleanupInvoker ([string[]]@('user-temp', 'windows-temp')) $false $false | Out-Null
 }
 
 function Get-SteamInstallPaths {
@@ -975,183 +1266,214 @@ function Clean-SteamShaderCache {
 }
 
 function Clean-Game {
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'D3DSCache') -Label 'DirectX Shader Cache' -TargetId 'directx-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\DXCache') -Label 'NVIDIA DXCache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\GLCache') -Label 'NVIDIA GLCache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'NVIDIA\NV_Cache') -Label 'NVIDIA NV_Cache' -TargetId 'nvidia-cache'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Steam\shadercache\730') -Label 'Steam shader cache CS2 (LocalAppData)' -TargetId 'steam-cache'
-    Clean-SteamShaderCache -AppId '730' -Label 'Steam shader cache CS2'
+    param(
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
+
+    & $CleanupInvoker ([string[]]@('directx-cache', 'nvidia-cache', 'steam-cache')) $false $false | Out-Null
 }
 
-function Clean-System {
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'CrashDumps') -Label 'Crash dumps cua ung dung' -TargetId 'crash-dumps'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Explorer') -Label 'Thumbnail cache cua Windows' -TargetId 'thumbnails'
-    Remove-FolderContents -Path (Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\INetCache') -Label 'Web cache cua Windows INetCache' -TargetId 'inet-cache'
-}
+function Invoke-WithTemporarilyStoppedServices {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ServiceNames,
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Action,
+        [scriptblock]$GetServiceState = {
+            param([string]$Name)
+            Get-Service -Name $Name -ErrorAction Stop
+        },
+        [scriptblock]$StopService = {
+            param([string]$Name)
+            Stop-Service -Name $Name -ErrorAction Stop
+            (Get-Service -Name $Name -ErrorAction Stop).WaitForStatus(
+                [ServiceProcess.ServiceControllerStatus]::Stopped,
+                [TimeSpan]::FromSeconds(30)
+            )
+        },
+        [scriptblock]$StartService = {
+            param([string]$Name)
+            Start-Service -Name $Name -ErrorAction Stop
+            (Get-Service -Name $Name -ErrorAction Stop).WaitForStatus(
+                [ServiceProcess.ServiceControllerStatus]::Running,
+                [TimeSpan]::FromSeconds(30)
+            )
+        }
+    )
 
-function Clean-RecycleBin {
-    Ensure-Admin
-    Write-UiHeader $T.CleanRecycleBin 'RecycleBin'
-    Write-CleanupEvent -Level INFO -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message 'Starting Recycle Bin cleanup'
+    $uniqueNames = [Collections.Generic.List[string]]::new()
+    foreach ($serviceName in @($ServiceNames)) {
+        if ([string]::IsNullOrWhiteSpace($serviceName) -or $uniqueNames -contains $serviceName) {
+            continue
+        }
+        $uniqueNames.Add($serviceName) | Out-Null
+    }
+    if ($uniqueNames.Count -eq 0) {
+        throw 'At least one Windows service name is required.'
+    }
+
+    $servicesToRestore = [Collections.Generic.List[string]]::new()
+    $originalStates = @{}
+    $operationError = $null
+    $restoreErrors = [Collections.Generic.List[string]]::new()
 
     try {
-        Clear-RecycleBin -Force -ErrorAction Stop
-        Write-Status Ok $T.CleanBinDone
-        Write-CleanupEvent -Level SUMMARY -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed'
+        # Snapshot every service before changing any of them. Stopping one service can affect another.
+        foreach ($serviceName in $uniqueNames) {
+            $serviceState = & $GetServiceState $serviceName
+            if ($null -eq $serviceState) {
+                throw ("Windows service state was not returned: {0}" -f $serviceName)
+            }
+
+            $status = [string]$serviceState.Status
+            if ($status -notin @('Running', 'Stopped')) {
+                throw ("Windows service is not in a stable Running/Stopped state: {0} ({1})" -f $serviceName, $status)
+            }
+            $originalStates[$serviceName] = $status
+        }
+
+        foreach ($serviceName in $uniqueNames) {
+            if ($originalStates[$serviceName] -eq 'Running') {
+                $servicesToRestore.Add($serviceName) | Out-Null
+                & $StopService $serviceName
+
+                $stoppedState = & $GetServiceState $serviceName
+                if ($null -eq $stoppedState -or [string]$stoppedState.Status -ne 'Stopped') {
+                    throw ("Windows service did not reach Stopped: {0}" -f $serviceName)
+                }
+            }
+        }
+
+        & $Action
     } catch {
-        Write-Status Warning $T.CleanBinEmpty
-        Write-CleanupEvent -Level WARN -TargetId 'recycle-bin' -TargetLabel 'Recycle Bin' -Path 'Recycle Bin' -Message $_.Exception.Message
+        $operationError = $_
+    } finally {
+        for ($index = $servicesToRestore.Count - 1; $index -ge 0; $index--) {
+            $serviceName = $servicesToRestore[$index]
+            try {
+                $currentState = & $GetServiceState $serviceName
+                if ($null -eq $currentState -or [string]$currentState.Status -ne 'Running') {
+                    & $StartService $serviceName
+                    $restoredState = & $GetServiceState $serviceName
+                    if ($null -eq $restoredState -or [string]$restoredState.Status -ne 'Running') {
+                        throw ("Windows service did not return to Running: {0}" -f $serviceName)
+                    }
+                }
+            } catch {
+                $restoreErrors.Add(("{0}: {1}" -f $serviceName, $_.Exception.Message)) | Out-Null
+            }
+        }
+    }
+
+    if ($null -ne $operationError) {
+        if ($restoreErrors.Count -gt 0) {
+            $operationError.Exception.Data['ServiceRestoreErrors'] = ($restoreErrors -join '; ')
+        }
+        throw $operationError
+    }
+    if ($restoreErrors.Count -gt 0) {
+        throw ("Failed to restore Windows service state: {0}" -f ($restoreErrors -join '; '))
     }
 }
 
-function Clean-All {
-    Write-Status Warning $T.ConfirmAll
-    $confirm = Read-UiInput $T.ConfirmPrompt
-    if ($confirm -ne 'y') {
-        Write-Status Warning $T.ActionSkipped
+function Invoke-WindowsUpdateDownloadCleanup {
+    param(
+        [string]$TargetId = 'windows-update-downloads',
+        [string]$TargetLabel = 'Windows Update downloads',
+        [string]$JobId = ''
+    )
+
+    Ensure-Admin
+    if ([string]::IsNullOrWhiteSpace($env:SystemRoot)) {
+        throw 'The Windows SystemRoot environment variable is unavailable.'
+    }
+
+    $updateDownloadPath = Join-Path $env:SystemRoot 'SoftwareDistribution\Download'
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Temporarily stopping running Windows Update services before cleanup' -JobId $JobId
+
+    $cleanupAction = {
+        Remove-FolderContents -Path $updateDownloadPath -Label $TargetLabel -TargetId $TargetId -JobId $JobId
+    }.GetNewClosure()
+
+    try {
+        Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action $cleanupAction
+    } catch {
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message $_.Exception.Message -JobId $JobId
+        throw
+    }
+
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Windows Update download cleanup completed and original service states were restored' -JobId $JobId
+}
+
+function Invoke-DeliveryOptimizationCleanup {
+    param(
+        [string]$TargetId = 'delivery-optimization',
+        [string]$TargetLabel = 'Delivery Optimization cache',
+        [string]$JobId = ''
+    )
+
+    Ensure-Admin
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Starting supported Delivery Optimization cache cleanup' -JobId $JobId
+
+    $command = Get-Command -Name Delete-DeliveryOptimizationCache -ErrorAction SilentlyContinue
+    if (-not $command) {
+        $message = 'Delete-DeliveryOptimizationCache is not available on this Windows installation.'
+        Write-Status Warning $message
+        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message $message -JobId $JobId
         return
     }
 
-    Clean-Temp
-    Clean-Game
-    Clean-System
-    Clean-RecycleBin
+    Delete-DeliveryOptimizationCache -Force -ErrorAction Stop
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Delivery Optimization cache cleanup completed; pinned files were preserved' -JobId $JobId
 }
 
-function Format-Bytes {
-    param([Nullable[double]]$Bytes)
-
-    if ($null -eq $Bytes) {
-        return $T.NotMeasurable
-    }
-
-    if ($Bytes -ge 1GB) {
-        return ('{0:N2} GB' -f ($Bytes / 1GB))
-    }
-
-    if ($Bytes -ge 1MB) {
-        return ('{0:N2} MB' -f ($Bytes / 1MB))
-    }
-
-    if ($Bytes -ge 1KB) {
-        return ('{0:N2} KB' -f ($Bytes / 1KB))
-    }
-
-    return ('{0:N0} B' -f $Bytes)
-}
-
-function Get-PathSize {
-    param([string]$Path)
-
-    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
-        return $null
-    }
-
-    try {
-        $sum = (Get-ChildItem -LiteralPath $Path -Force -File -Recurse -ErrorAction SilentlyContinue |
-            Measure-Object -Property Length -Sum).Sum
-
-        if ($null -eq $sum) {
-            return 0
-        }
-
-        return [double]$sum
-    } catch {
-        return $null
-    }
-}
-
-function Test-DirectChild {
+function Invoke-ComponentStoreCleanup {
     param(
-        [string]$Base,
-        [string]$Name
+        [string]$TargetId = 'component-store',
+        [string]$TargetLabel = 'Windows Component Store',
+        [string]$JobId = ''
     )
 
-    return Test-Path -LiteralPath (Join-Path $Base $Name)
+    Ensure-Admin
+    $dismPath = Join-Path $env:SystemRoot 'System32\dism.exe'
+    if (-not (Test-Path -LiteralPath $dismPath -PathType Leaf)) {
+        throw 'DISM was not found in the Windows System32 directory.'
+    }
+
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Starting supported Windows Component Store cleanup' -JobId $JobId
+    & $dismPath /Online /Cleanup-Image /StartComponentCleanup | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw ("DISM Component Store cleanup failed with exit code {0}." -f $LASTEXITCODE)
+    }
+
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Windows Component Store cleanup completed without ResetBase' -JobId $JobId
 }
 
-function Find-NpmProjects {
+function Clean-System {
     param(
-        [string]$Root,
-        [int]$MaxDirs = 50000
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
     )
 
-    $resolved = (Resolve-Path -LiteralPath $Root -ErrorAction Stop).Path
-    $skipNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
-    @('node_modules', '.git', '.hg', '.svn', '.pnpm', '.next', 'dist', 'build', 'out', 'coverage', '.cache') |
-        ForEach-Object { [void]$skipNames.Add($_) }
-
-    $items = New-Object 'System.Collections.Generic.List[object]'
-    $stack = New-Object 'System.Collections.Generic.Stack[string]'
-    $stack.Push($resolved)
-    $scanned = 0
-
-    while ($stack.Count -gt 0 -and $scanned -lt $MaxDirs) {
-        $dir = $stack.Pop()
-        $scanned++
-
-        $allChildren = @(Get-ChildItem -LiteralPath $dir -Force -ErrorAction SilentlyContinue)
-        $childNames = [System.Collections.Generic.HashSet[string]]::new(
-            [string[]]($allChildren | ForEach-Object { $_.Name }),
-            [StringComparer]::OrdinalIgnoreCase
-        )
-        $hasPackageJson = $childNames.Contains('package.json')
-        $hasPackageLock = $childNames.Contains('package-lock.json')
-        $hasShrinkwrap = $childNames.Contains('npm-shrinkwrap.json')
-        $hasPnpmLock = $childNames.Contains('pnpm-lock.yaml')
-        $hasYarnLock = $childNames.Contains('yarn.lock')
-        $hasNodeModules = $childNames.Contains('node_modules')
-
-        if ($hasPackageJson -or $hasPackageLock -or $hasShrinkwrap -or $hasNodeModules) {
-            [void]$items.Add([pscustomobject]@{
-                Path = $dir
-                PackageJson = $hasPackageJson
-                PackageLock = $hasPackageLock
-                Shrinkwrap = $hasShrinkwrap
-                PnpmLock = $hasPnpmLock
-                YarnLock = $hasYarnLock
-                NodeModules = $hasNodeModules
-            })
-        }
-
-        foreach ($child in $allChildren) {
-            if (-not $child.PSIsContainer) {
-                continue
-            }
-
-            if ($skipNames.Contains($child.Name)) {
-                continue
-            }
-
-            if (($child.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
-                continue
-            }
-
-            $stack.Push($child.FullName)
-        }
-    }
-
-    return [pscustomobject]@{
-        Root = $resolved
-        Items = @($items.ToArray())
-        Scanned = $scanned
-        HitLimit = ($scanned -ge $MaxDirs)
-    }
+    & $CleanupInvoker ([string[]]@('thumbnails', 'inet-cache', 'delivery-optimization', 'windows-font-cache', 'windows-error-reports')) $false $false | Out-Null
 }
 
-function Get-ToolVersionText {
-    param([string]$CommandName)
+function Clean-RecycleBin {
+    param(
+        [scriptblock]$ReadInput = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupInvoker = {
+            param([string[]]$TargetIds, [bool]$Deep, [bool]$Confirmed)
+            Invoke-CleanupTargetSet -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed
+        }
+    )
 
-    $cmd = Get-Command $CommandName -ErrorAction SilentlyContinue
-    if (-not $cmd) {
-        return 'missing'
-    }
-
-    try {
-        return (((& $cmd.Source --version 2>$null) -join '').Trim())
-    } catch {
-        return 'found'
-    }
+    return Invoke-CliCleanupSelection -Choice '6' -ReadInput $ReadInput -CleanupInvoker $CleanupInvoker
 }
 
 function Get-TaskStatusText {
@@ -1197,125 +1519,14 @@ function Show-Dashboard {
     Write-CardLine 'Dns' $T.CardDns $dnsVal Green
 
     Write-CardLine 'Task' $T.CardTask (Get-TaskStatusText) Yellow
-    Write-CardLine 'Runtime' $T.CardRuntime ('node {0} | npm {1} | pnpm {2}' -f (Get-ToolVersionText 'node'), (Get-ToolVersionText 'npm'), (Get-ToolVersionText 'pnpm')) Magenta
+    $runtimeText = 'PowerShell {0} | Windows {1}' -f $PSVersionTable.PSVersion, [Environment]::OSVersion.Version
+    Write-CardLine 'Runtime' $T.CardRuntime $runtimeText Magenta
 
     if ($UseFancyUi) {
         Write-Line '════════════════════════════════════════════════════════════════════' Cyan
     } else {
         Write-Line '+--------------------------------------------------------------------+' Cyan
     }
-}
-
-function Show-NpmScan {
-    param([string]$Root = $DefaultScanRoot)
-
-    Write-UiHeader $T.ScanHead 'Scan'
-    Write-Status Info $T.ScanInfo
-    Write-Line ''
-
-    $node = Get-Command node -ErrorAction SilentlyContinue
-    $npm = Get-Command npm -ErrorAction SilentlyContinue
-    $pnpm = Get-Command pnpm -ErrorAction SilentlyContinue
-
-    Write-Line "  [$($T.CardRuntime.ToUpper())]" Cyan
-    if ($node) { Write-Line ("    " + (Get-UiIcon Runtime) + " Node : {0}" -f ((& $node.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanNodeMissing)" Yellow }
-    if ($npm) { Write-Line ("    " + (Get-UiIcon Runtime) + " npm  : {0}" -f ((& $npm.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanNpmMissing)" Yellow }
-    if ($pnpm) { Write-Line ("    " + (Get-UiIcon Runtime) + " pnpm : {0}" -f ((& $pnpm.Source --version 2>$null) -join '')) White } else { Write-Line "    $($T.ScanPnpmMissing)" Yellow }
-
-    if ($npm) {
-        Write-Line ''
-        Write-Line "  [$($T.ScanGlobalHead)]" Cyan
-
-        $prefix = ((& $npm.Source config get prefix 2>$null) -join '').Trim()
-        $globalRoot = ((& $npm.Source root -g 2>$null) -join '').Trim()
-        $cache = ((& $npm.Source config get cache 2>$null) -join '').Trim()
-
-        Write-Line ("    Prefix     : {0}" -f $prefix) White
-        Write-Line ("    $($T.ScanGlobalRoot): {0}" -f $globalRoot) White
-        Write-Line ("    Cache      : {0}" -f $cache) White
-        Write-Line ("    $($T.ScanCacheSize) : {0}" -f (Format-Bytes (Get-PathSize -Path $cache))) White
-
-        Write-Line ''
-        Write-Line "  [$($T.ScanGlobPack)]" Cyan
-        try {
-            $json = ((& $npm.Source list -g --depth=0 --json 2>$null) -join "`n")
-            $globalInfo = $json | ConvertFrom-Json -ErrorAction Stop
-            $deps = @()
-
-            if ($globalInfo.dependencies) {
-                $deps = @($globalInfo.dependencies.PSObject.Properties | Sort-Object Name | ForEach-Object {
-                    [pscustomobject]@{
-                        Name = $_.Name
-                        Version = $_.Value.version
-                    }
-                })
-            }
-
-            if ($deps.Count -eq 0) {
-                Write-Line "    $($T.ScanNoPack)" Yellow
-            } else {
-                foreach ($dep in ($deps | Select-Object -First 80)) {
-                    Write-Line ("    - {0}@{1}" -f $dep.Name, $dep.Version) White
-                }
-
-                if ($deps.Count -gt 80) {
-                    Write-Line ("    " + ($T.ScanMoreItems -f ($deps.Count - 80))) Yellow
-                }
-            }
-        } catch {
-            Write-Line "    $($T.ScanReadError)" Yellow
-        }
-    }
-
-    Write-Line ''
-    Write-Line ("$($T.ScanProjRoot -f $Root)") Cyan
-
-    if (-not (Test-Path -LiteralPath $Root)) {
-        Write-Status Error $T.CleanFolderNotFound
-        return
-    }
-
-    $scan = Find-NpmProjects -Root $Root
-    $projects = @($scan.Items | Sort-Object Path)
-
-    Write-Line ("    $($T.ScanScanned) : {0} folders" -f $scan.Scanned) White
-    if ($scan.HitLimit) {
-        Write-Status Warning $T.ScanLimit
-    }
-
-    if ($projects.Count -eq 0) {
-        Write-Status Warning $T.ScanProjNone
-    } else {
-        Write-Line ("    $($T.ScanProjFound -f $projects.Count)") White
-        Write-Line ''
-        Write-Line '    Flags: pkg=package.json | lock=package-lock/npm-shrinkwrap | nm=node_modules | pnpm=pnpm-lock' DarkGray
-
-        foreach ($project in ($projects | Select-Object -First 120)) {
-            $flags = @()
-            if ($project.PackageJson) { $flags += 'pkg' }
-            if ($project.PackageLock -or $project.Shrinkwrap) { $flags += 'lock' }
-            if ($project.NodeModules) { $flags += 'nm' }
-            if ($project.PnpmLock) { $flags += 'pnpm' }
-            if ($project.YarnLock) { $flags += 'yarn' }
-
-            Write-Line ("    [{0,-18}] {1}" -f ($flags -join ','), $project.Path) White
-        }
-
-        if ($projects.Count -gt 120) {
-            Write-Line ("    " + ($T.ScanMoreItems -f ($projects.Count - 120))) Yellow
-        }
-    }
-
-    $npmLockProjects = @($projects | Where-Object { $_.PackageLock -or $_.Shrinkwrap })
-    $nodeModulesProjects = @($projects | Where-Object { $_.NodeModules })
-
-    Write-Line ''
-    Write-Line "[$($T.MigrateHead)]" Cyan
-    Write-Line ("  " + (Get-UiIcon Arrow) + " $($T.MigrateLock): {0}" -f $npmLockProjects.Count) White
-    Write-Line ("  " + (Get-UiIcon Arrow) + " $($T.MigrateNm): {0}" -f $nodeModulesProjects.Count) White
-    Write-Line ("  " + (Get-UiIcon Bullet) + " $($T.MigrateStep1)") Green
-    Write-Line ("  " + (Get-UiIcon Bullet) + " $($T.MigrateStep2)") Green
-    Write-Line ("  " + (Get-UiIcon Warning) + " $($T.MigrateStep3)") Yellow
 }
 
 function Show-Help {
@@ -1330,7 +1541,6 @@ function Show-Help {
     Write-Line '  NetBoost_Command_Center.bat --reset-dns' Green
     Write-Line '  NetBoost_Command_Center.bat --status' Green
     Write-Line '  NetBoost_Command_Center.bat --dashboard' Green
-    Write-Line '  NetBoost_Command_Center.bat --scan-npm D:\Code' Green
     Write-Line '  NetBoost_Command_Center.bat --web --port 47812' Green
     Write-Line '  NetBoost_Command_Center.bat --lang en' Green
     Write-Line '  NetBoost_Command_Center.bat --lang vi' Green
@@ -1347,6 +1557,11 @@ function Switch-UiLanguage {
 }
 
 function Show-Menu {
+    param(
+        [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
+        [scriptblock]$CleanupCenter = { Show-CleanupCenter }
+    )
+
     Ensure-Admin
     [Console]::Title = $AppName
 
@@ -1372,14 +1587,13 @@ function Show-Menu {
 
         Write-Section 'Tools' Blue
         Write-MenuItem '14' $T.Menu14 Cyan 'WinUtil'
-        Write-MenuItem '15' $T.Menu15 Cyan 'NpmScan'
-        Write-MenuItem '16' $T.Menu16 Cyan 'Dashboard'
-        Write-MenuItem '17' $T.Menu17 Cyan 'Tools'
-        Write-MenuItem '18' $T.Menu18 Green 'Web'
+        Write-MenuItem '15' $T.Menu15 Cyan 'Dashboard'
+        Write-MenuItem '16' $T.Menu16 Cyan 'Tools'
+        Write-MenuItem '17' $T.Menu17 Green 'Web'
         Write-MenuItem '0' $T.Menu0 Red 'Exit'
         Write-Line ''
 
-        $choice = Read-UiInput $T.PromptChoice
+        $choice = [string](& $InputReader $T.PromptChoice)
 
         try {
             switch ($choice) {
@@ -1391,21 +1605,15 @@ function Show-Menu {
                 '6' { Remove-AutoDnsTask; Pause-Back }
                 '7' { Flush-Dns; Pause-Back }
                 '8' { Reset-DnsToAuto; Pause-Back }
-                '9' { Clean-All; Pause-Back }
+                '9' { & $CleanupCenter }
                 '10' { Clean-Temp; Pause-Back }
                 '11' { Clean-Game; Pause-Back }
                 '12' { Clean-System; Pause-Back }
                 '13' { Clean-RecycleBin; Pause-Back }
                 '14' { Open-ChrisTitus; Pause-Back }
-                '15' {
-                    $root = Read-UiInput ("$($T.ScanProjRoot -f $DefaultScanRoot) (Enter = $DefaultScanRoot)")
-                    if ([string]::IsNullOrWhiteSpace($root)) { $root = $DefaultScanRoot }
-                    Show-NpmScan -Root $root
-                    Pause-Back
-                }
-                '16' { Show-Dashboard; Pause-Back }
-                '17' { Switch-UiLanguage }
-                '18' {
+                '15' { Show-Dashboard; Pause-Back }
+                '16' { Switch-UiLanguage }
+                '17' {
                     $webPort = 47812
                     if (Get-Command Start-NetBoostWebBackend -ErrorAction SilentlyContinue) {
                         Start-NetBoostWebBackend -Port $webPort
@@ -1427,7 +1635,6 @@ function Show-Menu {
 
 function Parse-Args {
     $mode = 'Menu'
-    $scanRoot = $DefaultScanRoot
     $webPort = 47812
 
     for ($i = 0; $i -lt $RawArgs.Count; $i++) {
@@ -1469,27 +1676,6 @@ function Parse-Args {
             '-status' { $mode = 'Status' }
             '--dashboard' { $mode = 'Dashboard' }
             '-dashboard' { $mode = 'Dashboard' }
-            '--scan-npm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
-            '-scannpm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
-            '-scan-npm' {
-                $mode = 'NpmScan'
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $scanRoot = $RawArgs[$i + 1]
-                    $i++
-                }
-            }
             '--help' { $mode = 'Help' }
             '-help' { $mode = 'Help' }
             '/?' { $mode = 'Help' }
@@ -1498,7 +1684,6 @@ function Parse-Args {
 
     return [pscustomobject]@{
         Mode = $mode
-        ScanRoot = $scanRoot
         WebPort = $webPort
     }
 }
@@ -1514,7 +1699,6 @@ switch ($parsed.Mode) {
     'Help' { Show-Help }
     'Status' { Show-DnsStatus }
     'Dashboard' { Show-Dashboard }
-    'NpmScan' { Show-NpmScan -Root $parsed.ScanRoot }
     'AutoDns' { Invoke-AutoDns }
     'Google' { Set-DnsProvider -ProviderName Google }
     'Cloudflare' { Set-DnsProvider -ProviderName Cloudflare }

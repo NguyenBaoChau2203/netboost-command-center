@@ -305,34 +305,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ lang, onNavigate, 
 
       </div>
 
-      {/* Node.js npm -> pnpm scanner quick card */}
-      <section className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-        <div className="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
-          <div className="flex items-center gap-sm">
-            <span className="material-symbols-outlined text-primary">terminal</span>
-            <h3 className="font-title-lg text-title-lg font-bold">{t('dashNpmTitle')}</h3>
-          </div>
-          <span className="px-xs py-0.5 bg-secondary-container text-on-secondary-container rounded font-label-sm text-label-sm">
-            {t('dashNpmBadge')}
-          </span>
-        </div>
-        <div className="p-lg flex flex-col md:flex-row gap-lg items-center justify-between">
-          <div className="space-y-sm max-w-2xl">
-            <p className="font-label-md text-label-md text-on-surface font-bold">{t('dashNpmHeading')}</p>
-            <p className="text-body-md text-on-surface-variant">
-              {t('dashNpmDesc')}
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate('npm-pnpm')}
-            className="px-xl py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md font-bold hover:opacity-90 active:scale-95 transition-all shadow-md flex items-center gap-xs whitespace-nowrap cursor-pointer"
-          >
-            <span className="material-symbols-outlined">search</span>
-            {t('dashNpmAction')}
-          </button>
-        </div>
-      </section>
-
       {/* Activity Log / Live PowerShell Terminal */}
       <section className="bg-inverse-surface rounded-xl border border-on-surface-variant/20 shadow-xl overflow-hidden flex flex-col">
         <div className="px-md py-sm bg-[#1a1c1d] border-b border-outline/30 flex items-center justify-between">

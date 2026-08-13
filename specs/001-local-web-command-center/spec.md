@@ -8,12 +8,11 @@ Phase 1 Complete
 
 Add a local web interface for NetBoost Command Center while keeping the current PowerShell CLI usable.
 
-The web UI should make DNS status, cleanup, npm -> pnpm scanning, scheduled task management, and settings easier to understand. It must stay local-only and transparent about privileged or destructive actions.
+The web UI should make DNS status, cleanup, scheduled task management, and settings easier to understand. It must stay local-only and transparent about privileged or destructive actions.
 
 ## Users
 
 - Windows users who prefer a visual dashboard over the current CLI menu.
-- Developers scanning workspaces for npm -> pnpm migration opportunities.
 - Power users who still need CLI flags and scheduled tasks.
 
 ## User Stories
@@ -44,19 +43,13 @@ As a user, I can choose supported cleanup targets, read the impact warning, conf
 Acceptance:
 - Supported targets match the constitution.
 - Recycle Bin and deep cleanup require explicit confirmation.
+- Safe Temp cleanup preserves the newest 24 hours; Deep Temp cleanup preserves the newest hour.
+- Prefetch is deep-only and limited to `.pf` files older than 30 days.
+- Component Store and Delivery Optimization use supported Windows maintenance commands instead of raw Windows Update cache deletion.
 - Locked files are skipped and listed.
 - The app never stops drivers, force-closes apps, or claims unsupported cleanup targets.
 
-### US4 - npm -> pnpm Scanner
-
-As a developer, I can scan a folder for Node.js projects and see report-only recommendations.
-
-Acceptance:
-- Scanner does not mutate project files.
-- UI includes a clear report-only note.
-- Suggested commands are copyable guidance, not executed actions.
-
-### US5 - Auto DNS Scheduled Task
+### US4 - Auto DNS Scheduled Task
 
 As a user, I can view, create, remove, and test the NetBoost Auto DNS scheduled task.
 
@@ -66,7 +59,7 @@ Acceptance:
 - Admin-required states are visible.
 - Logs show DNS task actions only.
 
-### US6 - Settings
+### US5 - Settings
 
 As a user, I can adjust local UI preferences and confirm backend safety settings.
 
@@ -91,5 +84,4 @@ Acceptance:
 - Shipping an installer.
 - Running as a Windows service.
 - Cloud sync or user accounts.
-- Automatic pnpm migration.
 - Unsupported cleanup targets such as browser cookies, Spotify, Adobe temp, VS Code extension cache, Windows Update cache, or generic pip/npm cache cleanup.

@@ -5,15 +5,13 @@ import type {
   SettingsState,
   JobState,
   LogEvent,
-  NpmScanJobState,
   AutoDnsTaskState
 } from './types';
 import {
   initialHealth,
   initialDashboard,
   allowedCleanupTargets,
-  initialSettings,
-  mockProjects
+  initialSettings
 } from './mockData';
 
 // Save settings to localStorage
@@ -115,8 +113,6 @@ export class ApiClient {
 
   private activeJobs: Record<string, JobState> = {};
   private activeJobEvents: Record<string, LogEvent[]> = {};
-
-  private npmScanJob: NpmScanJobState | null = null;
 
   private listeners: (() => void)[] = [];
   private adminRequiredError: boolean = false;
@@ -693,137 +689,6 @@ export class ApiClient {
     }, 1000);
 
     return { jobId, status: "queued" };
-  }
-
-  // --- NPM PNPM SCANNER (REPORT ONLY) ---
-  public async scanNpmProjects(request: { root: string; maxDepth: number; ignore: string[] }, onProgress: (state: NpmScanJobState) => void): Promise<{ jobId: string; status: string }> {
-    const backend = await fetchBackendJson<{ jobId: string; status: string }>('/api/npm/scan', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-
-    if (backend && backend.jobId) {
-      const interval = setInterval(async () => {
-        const [jobState, events] = await Promise.all([
-          fetchBackendJson<JobState & Partial<NpmScanJobState>>(`/api/jobs/${backend.jobId}`),
-          fetchBackendJson<LogEvent[]>(`/api/jobs/${backend.jobId}/events`)
-        ]);
-
-        if (jobState && events) {
-          const scanJobState: NpmScanJobState = {
-            jobId: jobState.jobId,
-            status: jobState.status,
-            progress: jobState.progress,
-            projectsFound: jobState.projectsFound || 0,
-            totalNodeModulesBytes: jobState.totalNodeModulesBytes || 0,
-            packageLockCount: jobState.packageLockCount || 0,
-            expectedSavingsBytes: jobState.expectedSavingsBytes || 0,
-            projects: jobState.projects || [],
-            logs: events
-          };
-
-          this.npmScanJob = scanJobState;
-          onProgress(scanJobState);
-          this.notify();
-
-          if (jobState.status === 'completed' || jobState.status === 'failed') {
-            clearInterval(interval);
-            this.dashboard = await this.getDashboard();
-            this.notify();
-          }
-        }
-      }, 500);
-
-      return backend;
-    }
-
-    const jobId = `npm-scan-${Date.now()}`;
-
-    const projects = [...mockProjects];
-    const totalSize = projects.reduce((sum, p) => sum + p.nodeModulesSize, 0);
-    const expectedSavings = Math.round(totalSize * 0.72); // ~72% saved using pnpm stores
-
-    this.npmScanJob = {
-      jobId,
-      status: 'queued',
-      progress: 0,
-      projectsFound: 0,
-      totalNodeModulesBytes: 0,
-      packageLockCount: 0,
-      expectedSavingsBytes: 0,
-      projects: [],
-      logs: [
-        { timestamp: new Date().toISOString(), level: 'INFO', message: `Bắt đầu quét Node.js dự án tại đường dẫn: ${request.root}` },
-        { timestamp: new Date().toISOString(), level: 'INFO', message: `Độ sâu tối đa: ${request.maxDepth}. Thư mục bỏ qua: ${request.ignore.join(', ')}` }
-      ]
-    };
-
-    setTimeout(() => {
-      if (!this.npmScanJob) return;
-      this.npmScanJob.status = 'running';
-      this.notify();
-
-      let progress = 0;
-      const interval = setInterval(() => {
-        if (!this.npmScanJob) {
-          clearInterval(interval);
-          return;
-        }
-
-        progress += 20;
-        this.npmScanJob.progress = progress;
-
-        if (progress === 20) {
-          this.npmScanJob.logs.push({ timestamp: new Date().toISOString(), level: 'INFO', message: `[SCAN] Đang phân tích cấu trúc thư mục...` });
-        } else if (progress === 40) {
-          this.npmScanJob.projectsFound = 1;
-          this.npmScanJob.projects = [projects[0]];
-          this.npmScanJob.packageLockCount = 1;
-          this.npmScanJob.totalNodeModulesBytes = projects[0].nodeModulesSize;
-          this.npmScanJob.expectedSavingsBytes = Math.round(projects[0].nodeModulesSize * 0.72);
-          this.npmScanJob.logs.push({ timestamp: new Date().toISOString(), level: 'FOUND', message: `[FOUND] Phát hiện /client-app (Lockfile: package-lock.json, Size: 850 MB)` });
-        } else if (progress === 60) {
-          this.npmScanJob.projectsFound = 2;
-          this.npmScanJob.projects = [projects[0], projects[1]];
-          this.npmScanJob.totalNodeModulesBytes += projects[1].nodeModulesSize;
-          this.npmScanJob.expectedSavingsBytes += Math.round(projects[1].nodeModulesSize * 0.72);
-          this.npmScanJob.logs.push({ timestamp: new Date().toISOString(), level: 'FOUND', message: `[FOUND] Phát hiện /backend-api (Lockfile: yarn.lock, Size: 1.2 GB)` });
-        } else if (progress === 80) {
-          this.npmScanJob.projectsFound = 4;
-          this.npmScanJob.projects = projects;
-          this.npmScanJob.packageLockCount = 2;
-          this.npmScanJob.totalNodeModulesBytes = totalSize;
-          this.npmScanJob.expectedSavingsBytes = expectedSavings;
-          this.npmScanJob.logs.push({ timestamp: new Date().toISOString(), level: 'FOUND', message: `[FOUND] Phát hiện /landing-page (Lockfile: package-lock.json)` });
-          this.npmScanJob.logs.push({ timestamp: new Date().toISOString(), level: 'FOUND', message: `[FOUND] Phát hiện /internal-tool (Lockfile: pnpm-lock.yaml)` });
-        } else if (progress === 100) {
-          clearInterval(interval);
-          this.npmScanJob.status = 'completed';
-          this.npmScanJob.logs.push({
-            timestamp: new Date().toISOString(),
-            level: 'SUMMARY',
-            message: `[SUCCESS] Hoàn thành quét. Tìm thấy ${this.npmScanJob.projectsFound} dự án Node.js. Khả năng giải phóng: ${(expectedSavings / (1024*1024*1024)).toFixed(2)} GB ổ đĩa.`
-          });
-
-          // Add to dashboard summary
-          this.dashboard.recentLogs.push({
-            timestamp: new Date().toISOString(),
-            level: 'INFO',
-            message: `npm scanner hoàn tất: Phát hiện ${this.npmScanJob.projectsFound} dự án Node.js, tiết kiệm khả thi: ${(expectedSavings / (1024*1024*1024)).toFixed(2)} GB`
-          });
-        }
-
-        onProgress({ ...this.npmScanJob });
-        this.notify();
-      }, 600);
-
-    }, 500);
-
-    return { jobId, status: "queued" };
-  }
-
-  public getActiveNpmScan(): NpmScanJobState | null {
-    return this.npmScanJob;
   }
 
   // --- AUTO TASK SCHEDULED TASK ---

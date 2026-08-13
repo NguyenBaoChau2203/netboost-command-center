@@ -7,7 +7,6 @@ import { useTranslation } from './i18n/translations';
 import { DashboardView } from './views/DashboardView';
 import { DnsView } from './views/DnsView';
 import { CleanupView } from './views/CleanupView';
-import { NpmPnpmView } from './views/NpmPnpmView';
 import { AutoTaskView } from './views/AutoTaskView';
 import { SettingsView } from './views/SettingsView';
 
@@ -58,7 +57,6 @@ function App() {
     { id: 'dashboard', label: t('navDashboard'), icon: 'dashboard' },
     { id: 'dns', label: t('navDns'), icon: 'dns' },
     { id: 'cleanup', label: t('navCleanup'), icon: 'cleaning_services' },
-    { id: 'npm-pnpm', label: t('navNpmPnpm'), icon: 'swap_horiz' },
     { id: 'task', label: t('navAutoTask'), icon: 'auto_mode' },
     { id: 'settings', label: t('navSettings'), icon: 'settings' }
   ];
@@ -145,7 +143,6 @@ function App() {
           {activeTab === 'dashboard' && <DashboardView lang={lang} onNavigate={setActiveTab} setActiveLogSource={() => {}} />}
           {activeTab === 'dns' && <DnsView lang={lang} />}
           {activeTab === 'cleanup' && <CleanupView lang={lang} />}
-          {activeTab === 'npm-pnpm' && <NpmPnpmView lang={lang} />}
           {activeTab === 'task' && <AutoTaskView lang={lang} />}
           {activeTab === 'settings' && <SettingsView lang={lang} onLangChange={setLang} />}
         </div>

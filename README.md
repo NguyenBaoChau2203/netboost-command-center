@@ -28,10 +28,10 @@
 
 | Mode | Interface | Entry Point | Description |
 |------|-----------|-------------|-------------|
-| **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 18-option interactive menu, fully ASCII-safe |
-| **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[18]` | React/Vite SPA served by a pure PowerShell TCP backend |
+| **CLI** | Terminal (CMD/PowerShell) | `NetBoost_Command_Center.bat` | 17-option interactive menu, fully ASCII-safe |
+| **Web UI** | Browser at `127.0.0.1:47812` | `--web` flag or Option `[17]` | React/Vite SPA served by a pure PowerShell TCP backend |
 
-Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, npm scanning, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
+Both modes share the **same PowerShell core engine** for DNS management, cache cleanup, and scheduled task control. NetBoost does not collect telemetry or require an account; core actions run through a local loopback backend on your machine.
 
 ---
 
@@ -43,13 +43,13 @@ Both modes share the **same PowerShell core engine** for DNS management, cache c
 - **Scheduled Auto-DNS Task** — optional, off by default, and created only after explicit confirmation; registers `NetBoost Auto DNS Optimizer` to run 30 seconds after Windows logon
 - **Flush DNS / Reset to DHCP** — clean slate in one keystroke
 
-### 🧹 Cache Cleanup (13 Targets)
-Safe, transparent, per-file deletion with automatic locked-file skipping:
+### 🧹 Cache Cleanup (15 Targets)
+Safe, transparent cleanup with bounded estimates, automatic locked-file skipping, and supported Windows maintenance actions:
 
 | # | Target ID | Path | Risk |
 |---|-----------|------|------|
-| 1 | `user-temp` | `%TEMP%` | Low |
-| 2 | `windows-temp` | `C:\Windows\Temp` | Low |
+| 1 | `user-temp` | `%TEMP%` — Safe: >24h, Deep: >1h | Low |
+| 2 | `windows-temp` | `C:\Windows\Temp` — Safe: >24h, Deep: >1h | Low |
 | 3 | `directx-cache` | `%LOCALAPPDATA%\D3DSCache` | Medium |
 | 4 | `nvidia-cache` | `%LOCALAPPDATA%\NVIDIA\DXCache/GLCache/NV_Cache` | Medium |
 | 5 | `steam-cache` | Steam `shadercache\730` (all libraries) | Medium |
@@ -57,19 +57,16 @@ Safe, transparent, per-file deletion with automatic locked-file skipping:
 | 7 | `thumbnails` | `%LOCALAPPDATA%\Microsoft\Windows\Explorer` | Low |
 | 8 | `inet-cache` | `%LOCALAPPDATA%\Microsoft\Windows\INetCache` | Low |
 | 9 | `recycle-bin` | Recycle Bin | High ⚠️ |
-| 10 | `windows-update` | `C:\Windows\SoftwareDistribution\Download` | Medium ⚠️ |
-| 11 | `windows-font-cache` | Windows Font Cache service directory | Low |
-| 12 | `windows-prefetch` | `C:\Windows\Prefetch` | Medium ⚠️ |
-| 13 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
+| 10 | `component-store` | DISM `/StartComponentCleanup` — Deep only | Medium ⚠️ |
+| 11 | `delivery-optimization` | Supported Delivery Optimization cmdlet | Low |
+| 12 | `windows-update-downloads` | `%SystemRoot%\SoftwareDistribution\Download` — Deep only | High ⚠️ |
+| 13 | `windows-font-cache` | Windows Font Cache service directory | Low |
+| 14 | `windows-prefetch` | Only `*.pf` older than 30 days — Deep only | Medium ⚠️ |
+| 15 | `windows-error-reports` | `C:\ProgramData\Microsoft\Windows\WER` | Low |
 
-> High-risk targets require explicit `y` confirmation before deletion. Locked files are automatically skipped — the tool never force-kills running applications.
+> Prefetch and Windows Update downloads are visible but off by default. Both require Deep mode and confirmation. Prefetch preserves `ReadyBoot` and `Layout.ini`. Windows Update cleanup deletes only the contents below `SoftwareDistribution\Download`, temporarily stops only running `wuauserv`/`BITS` services, and restores their original states even when cleanup fails. Windows may download removed update packages again when needed.
 
-### 📦 npm → pnpm Migration Scanner
-- Report-only scanner — **never deletes files, never modifies `package.json`**
-- Recursively finds Node.js projects up to a configurable depth (2/5/10 levels)
-- Detects `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, `node_modules/`, and `pnpm-lock.yaml`
-- Generates copyable `pnpm import` + `pnpm install` commands with per-project migration guidance
-- Scans up to 50,000 directories before warning to refine the scope
+The Windows Update sequence follows Microsoft's documented troubleshooting workflow: [Microsoft Support — troubleshoot problems updating Windows](https://support.microsoft.com/en-us/windows/deployment/updates-lifecycle/troubleshoot-problems-updating-windows) and [Microsoft Learn — common Windows Update errors](https://learn.microsoft.com/en-us/troubleshoot/windows-client/installing-updates-features-roles/common-windows-update-errors).
 
 ### 📊 Live Dashboard
 - Real-time adapter name, DNS servers, and connection status
@@ -98,6 +95,27 @@ Safe, transparent, per-file deletion with automatic locked-file skipping:
 - Windows PowerShell 5.1 (built-in, no additional install needed)
 - Modern browser (for Web UI mode only)
 
+### Mochi Cat branded shortcut
+
+Windows batch files cannot embed a custom icon. NetBoost therefore keeps `NetBoost_Command_Center.bat` as the canonical launcher and provides a Windows shortcut that points to the same BAT file while displaying the Mochi Cat icon.
+
+Create or refresh `NetBoost Command Center.lnk` in the project root:
+
+```powershell
+.\tools\Create-NetBoostShortcut.ps1
+```
+
+Create the branded shortcut on the current user's desktop instead:
+
+```powershell
+.\tools\Create-NetBoostShortcut.ps1 -Desktop
+```
+
+The generated `.lnk` is machine-specific and ignored by Git. The committed brand files are:
+
+- `assets/brand/netboost-mochi-cat.png` — approved high-fidelity 1254×1254 canonical artwork
+- `assets/brand/netboost-mochi-cat.ico` — Windows icon derived from the canonical PNG, with 16–256 px layers
+
 ### 1 — Launch the CLI (Auto-Elevation)
 
 Simply **double-click** `NetBoost_Command_Center.bat`.
@@ -123,7 +141,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
 +--------------------------------------------------------------------+
 |                         NETBOOST COMMAND CENTER                    |
 +--------------------------------------------------------------------+
-  Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 16.
+  Mo nhanh: dashboard khong tu chay, chi xem khi ban chon muc 15.
 
   NETWORK / DNS
   [1 ] Auto chon DNS ping thap hon ngay bay gio
@@ -136,33 +154,40 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0src\powershell\Net
   [8 ] Dat lai DNS ve DHCP/Auto
 
   CLEANUP
-  [9 ] Xoa TAT CA bo nho dem (Cache)
-  [10] Don dep tep tin tam Windows & Nguoi dung
+  [9 ] Mo Trung tam don dep CLI (An toan / Nang cao)
+  [10] Don tep tam Windows & Nguoi dung cu hon 24 gio
   [11] Don dep bo nho dem Game & Do hoa
-  [12] Don dep bo nho dem He thong
-  [13] Lam trong Thung rac (Recycle Bin)
+  [12] Don cache Windows co ban
+  [13] Lam trong Thung rac (can xac nhan)
 
   TOOLS
   [14] Mo Chris Titus WinUtil
-  [15] Quet cac du an npm de chuyen sang pnpm
-  [16] Xem bang thong tin (Dashboard)
-  [17] Switch interface language to English
-  [18] Mo giao dien Web UI (trinh duyet local)
+  [15] Xem bang thong tin (Dashboard)
+  [16] Switch interface language to English
+  [17] Mo giao dien Web UI (trinh duyet local)
   [0 ] Thoat chuong trinh
 
 Chon muc (Select option):
 ```
 
-### 3 — Launch the Web UI (Option 18 or `--web`)
+Option **`[9]`** opens the CLI Cleanup Center with three clearly separated groups:
 
-Select **`[18]`** from the menu, or run with the `--web` flag:
+- **Safe:** Temp older than 24 hours, Game/Graphics caches, basic Windows caches, or the recommended safe group.
+- **Confirmation required:** Crash Dumps and Recycle Bin require `y` before execution.
+- **Advanced:** Component Store, Windows Update downloads, and Prefetch require the exact case-sensitive text `CONFIRM`. Advanced actions run one at a time; there is no “run all advanced” option.
+
+The CLI and Web UI use the same cleanup target definitions, path guards, retention rules, and Windows service restoration logic.
+
+### 3 — Launch the Web UI (Option 17 or `--web`)
+
+Select **`[17]`** from the menu, or run with the `--web` flag:
 
 ```batch
 NetBoost_Command_Center.bat --web
 NetBoost_Command_Center.bat --web --port 47812
 ```
 
-When Option 18 is triggered:
+When Option 17 is triggered:
 1. **Port check** — NetBoost checks if port `47812` is occupied and refuses to stop unrelated local processes; close the other app or choose another port
 2. **TCP backend starts** — `Start-NetBoostTcpBackend` binds a `System.Net.Sockets.TcpListener` to `127.0.0.1:47812`
 3. **Browser opens** — `Start-Process http://127.0.0.1:47812/` launches your default browser
@@ -191,14 +216,13 @@ All flags are accepted by the `.bat` launcher and passed through to the PowerShe
 
 | Flag | Alias | Description |
 |------|-------|-------------|
-| *(none)* | | Interactive 18-option menu (default mode) |
+| *(none)* | | Interactive 17-option menu (default mode) |
 | `--auto-dns` | `-auto-dns`, `-AutoDns` | Non-interactive: run Auto DNS selection and exit |
 | `--google` | `-google` | Force Google DNS (8.8.8.8 / 8.8.4.4) and exit |
 | `--cloudflare` | `-cloudflare` | Force Cloudflare DNS (1.1.1.1 / 1.0.0.1) and exit |
 | `--reset-dns` | `-reset-dns`, `-ResetDns` | Reset DNS to DHCP/Auto and exit |
 | `--status` | `-status` | Show current DNS adapter status and exit |
 | `--dashboard` | `-dashboard` | Show telemetry dashboard and exit |
-| `--scan-npm <path>` | `-scan-npm`, `-ScanNpm` | Scan `<path>` for npm projects and exit |
 | `--web` | `-web` | Start local Web UI backend server |
 | `--port <number>` | `-port` | Set web server port (default: `47812`, range: 1–65535) |
 | `--lang en` | `-lang en` | Use English interface |
@@ -209,9 +233,6 @@ All flags are accepted by the `.bat` launcher and passed through to the PowerShe
 ```batch
 :: Run as a one-shot Auto DNS optimizer (e.g. in a scheduled task)
 NetBoost_Command_Center.bat --auto-dns --lang en
-
-:: Scan D:\Projects for npm migration candidates in English
-NetBoost_Command_Center.bat --scan-npm D:\Projects --lang en
 
 :: Start Web UI on a custom port
 NetBoost_Command_Center.bat --web --port 8080
@@ -242,13 +263,15 @@ In Fancy mode the same icons used in the Web UI are echoed in the terminal (🌐
 NetBoost_Command_Center/
 │
 ├── NetBoost_Command_Center.bat          # Launcher: auto-elevation + PS1 entry point
+├── assets/brand/                        # Canonical Mochi Cat PNG and Windows ICO
+├── tools/Create-NetBoostShortcut.ps1    # Creates a branded .lnk to the BAT launcher
 ├── LICENSE                              # MIT License
 ├── README.md                            # This file
 ├── .gitignore
 │
 ├── src/
 │   ├── powershell/
-│   │   └── NetBoost_Command_Center.ps1  # CLI core: menu, DNS, cleanup, npm scan
+│   │   └── NetBoost_Command_Center.ps1  # CLI core: menu, DNS, cleanup
 │   │                                    # 1 532 lines · #Requires -Version 5.1
 │   │
 │   ├── backend/
@@ -277,12 +300,11 @@ NetBoost_Command_Center/
 │           │   ├── types.ts             # Shared TypeScript interfaces
 │           │   └── mockData.ts          # Dev-mode mock data
 │           ├── i18n/
-│           │   └── translations.ts      # 259 keys · Vietnamese + English
+│           │   └── translations.ts      # Vietnamese + English
 │           └── views/
-│               ├── DashboardView.tsx    # Latency cards, cleanup summary, npm teaser
+│               ├── DashboardView.tsx    # Latency cards, cleanup summary, live logs
 │               ├── DnsView.tsx          # DNS adapter status + optimization actions
-│               ├── CleanupView.tsx      # 13-target cleanup with live job progress
-│               ├── NpmPnpmView.tsx      # Migration scanner with per-project steps
+│               ├── CleanupView.tsx      # 15-target cleanup with live job progress
 │               ├── AutoTaskView.tsx     # Task Scheduler management + workflow diagram
 │               └── SettingsView.tsx     # Language, theme, security, logging settings
 │
@@ -311,11 +333,11 @@ NetBoost_Command_Center/
 │  ┌─────────────────┐   dot-sources   ┌───────────────────────┐  │
 │  │   CLI Engine    │ ─────────────►  │  src/backend/         │  │
 │  │  (Menu / DNS /  │                 │  NetBoost.LocalWeb.ps1│  │
-│  │  Cleanup / npm) │ ◄─────────────  │  (REST API + TCP srv) │  │
+│  │    Cleanup)     │ ◄─────────────  │  (REST API + TCP srv) │  │
 │  └─────────────────┘  shared state   └───────────────────────┘  │
 └──────────────────────────────┬──────────────────────────────────┘
                                │
-              Mode: --web / Option [18]
+              Mode: --web / Option [17]
                                │
                                ▼
           ┌────────────────────────────────────┐
@@ -329,9 +351,7 @@ NetBoost_Command_Center/
           │   • POST /api/dns/flush            │
           │   • POST /api/dns/reset            │
           │   • GET  /api/cleanup/targets      │
-          │   • POST /api/cleanup/start        │
-          │   • GET  /api/cleanup/job/{id}     │
-          │   • POST /api/npm/scan             │
+          │   • POST /api/cleanup/run          │
           │   • GET  /api/jobs/{id}            │
           │   • GET  /api/jobs/{id}/events     │
           │   • GET  /api/tasks/auto-dns       │
@@ -347,10 +367,10 @@ NetBoost_Command_Center/
           │   (pre-built in src/web/dist/)  │
           │                                 │
           │  Views: Dashboard · DNS         │
-          │         Cleanup · npm→pnpm      │
-          │         AutoTask · Settings     │
+          │         Cleanup · AutoTask      │
+          │         Settings                │
           │                                 │
-          │  i18n: 259 keys · VI + EN       │
+          │  i18n: Vietnamese + English     │
           │  Theme: Light / Dark / System   │
           └─────────────────────────────────┘
 ```
@@ -381,10 +401,8 @@ All endpoints require the session cookie or `X-NetBoost-Token` header (except `G
 | `POST` | `/api/dns/provider` | `{ provider: "Google"\|"Cloudflare" }` | Force specific DNS provider |
 | `POST` | `/api/dns/flush` | — | Flush DNS client cache |
 | `POST` | `/api/dns/reset` | — | Reset DNS to DHCP/Auto |
-| `GET` | `/api/cleanup/targets` | — | 13 cleanup targets with size estimates |
-| `POST` | `/api/cleanup/start` | `{ targets: string[], mode: "safe"\|"deep" }` | Start async cleanup job |
-| `GET` | `/api/cleanup/job/{id}` | — | Poll cleanup job progress + events |
-| `POST` | `/api/npm/scan` | `{ root, maxDepth, ignore }` | Start async npm scan job |
+| `GET` | `/api/cleanup/targets` | — | 15 cleanup targets with bounded estimate metadata |
+| `POST` | `/api/cleanup/run` | `{ targetIds: string[], deep: boolean, confirmed: boolean }` | Start a validated async cleanup job |
 | `GET` | `/api/jobs/{id}` | — | Poll async job state |
 | `GET` | `/api/jobs/{id}/events` | — | Poll capped live job events |
 | `GET` | `/api/tasks/auto-dns` | — | Auto-DNS scheduled task state |
@@ -419,10 +437,12 @@ NetBoost is designed around a strict **do-no-harm** philosophy:
 
 - ✅ **Never kills Display Drivers** or GPU processes
 - ✅ **Never force-closes user applications** — locked files are silently skipped
-- ✅ **Never modifies `package.json`** or deletes `node_modules` automatically
+- ✅ **Rejects drive roots, profile roots, Windows roots, path escapes, and reparse-point traversal** before file deletion
 - ✅ **Never uploads user files, local paths, logs, or settings**
 - ✅ **Never installs persistent services** — only one optional Task Scheduler entry after explicit user confirmation
-- ✅ **Requires explicit confirmation** for high-risk targets (Recycle Bin, Windows Update cache, Prefetch, Crash Dumps)
+- ✅ **Requires explicit confirmation** for risky targets (Recycle Bin, Component Store, Windows Update downloads, Prefetch, Crash Dumps)
+- ✅ **Uses supported/documented Windows actions** for Component Store, Delivery Optimization, and Windows Update download cleanup; never uses DISM `ResetBase`
+- ✅ **Restores Windows Update service state** — only originally running `wuauserv`/`BITS` services are stopped and restarted, including after cleanup errors
 - ✅ **Never stops unrelated processes on port conflicts** — reports the occupied port instead of force-killing another app
 - ✅ **All server runspaces and owned dialog child processes terminate** when the CLI window is closed
 - ✅ **Local-first by design** — TCP server is bound exclusively to `127.0.0.1`, inaccessible from LAN or WAN
@@ -435,16 +455,16 @@ NetBoost is designed around a strict **do-no-harm** philosophy:
 
 ```bash
 cd src/web
-npm install
+pnpm install
 
 # Start Vite dev server (hot reload)
-npm run dev
+pnpm dev
 
 # Type-check and build production bundle → src/web/dist/
-npm run build
+pnpm build
 
 # Lint
-npm run lint
+pnpm lint
 ```
 
 > **Note:** The Vite dev server runs on `localhost:5173` with CORS pre-configured for the PowerShell backend at `127.0.0.1:47812`. For the full integrated experience, start the CLI backend first.
@@ -469,7 +489,7 @@ NetBoost_Command_Center.bat --web --port 47812
 |-----------|----------------|-------|
 | Windows | 10 (1903+) / 11 | Required for `Get-NetTCPConnection`, `Get-NetAdapter`, `Get-NetRoute` |
 | Windows PowerShell | **5.1** | Ships with all supported Windows versions; no PowerShell 7 needed |
-| Node.js + npm | Any (optional) | Only required for Web UI development / rebuilding the frontend |
+| Node.js + pnpm | Current LTS / pnpm 10+ (optional) | Only required for Web UI development / rebuilding the frontend |
 | Administrator rights | Required for DNS ops | Auto-elevated via UAC on first launch |
 
 ---

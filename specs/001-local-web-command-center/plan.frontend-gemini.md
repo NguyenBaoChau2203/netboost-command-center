@@ -36,7 +36,6 @@ Build the local web UI from the approved Stitch mockup direction, using the API 
    - Latency card
    - DNS latency comparison
    - Cleanup summary card
-   - npm -> pnpm summary
    - Terminal output
 
 2. DNS
@@ -57,22 +56,13 @@ Build the local web UI from the approved Stitch mockup direction, using the API 
    - Completed summary
    - Locked-file table
 
-4. npm -> pnpm
-   - Report-only note
-   - Path input
-   - Scan controls
-   - Summary cards
-   - Project result cards/table
-   - Suggested commands as copyable guidance
-   - No migrate buttons
-
-5. Auto Task
+4. Auto Task
    - Scheduled task status
    - Create/remove/run-now actions
    - Admin warning
    - DNS task timeline/logs only
 
-6. Settings
+5. Settings
    - Language, theme, compact mode
    - Local bind address
    - Session token status

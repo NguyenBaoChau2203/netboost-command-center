@@ -27,8 +27,8 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
   useEffect(() => {
     api.getCleanupTargets().then(data => {
       setTargets(data);
-      // Select low/medium risk targets by default
-      setSelectedIds(data.filter(t => !t.requiresConfirmation).map(t => t.id));
+      // Deep-only and confirmation-required targets stay opt-in.
+      setSelectedIds(data.filter(t => !t.requiresConfirmation && !t.deepOnly).map(t => t.id));
     });
   }, []);
 
@@ -57,11 +57,22 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
     return selected.reduce((sum, t) => sum + t.estimatedBytes, 0);
   };
 
+  const hasSelectedDeepOnlyTarget = targets.some(target =>
+    selectedIds.includes(target.id) && target.deepOnly
+  );
+
+  const hasIncompleteEstimate = targets.some(target =>
+    selectedIds.includes(target.id) && !target.estimateComplete
+  );
+
   const handleStartCleanup = (deepMode: boolean) => {
     setIsDeepClean(deepMode);
 
     // Check if any selected targets require confirmation
     const selectedTargets = targets.filter(t => selectedIds.includes(t.id));
+    if (!deepMode && selectedTargets.some(target => target.deepOnly)) {
+      return;
+    }
     const needsConfirm = selectedTargets.some(t => t.requiresConfirmation) || deepMode;
 
     if (needsConfirm) {
@@ -71,6 +82,15 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
       }
       if (selectedIds.includes('crash-dumps')) {
         reason += t('cleanConfirmCrashDumpsReason');
+      }
+      if (selectedIds.includes('windows-prefetch')) {
+        reason += t('cleanConfirmPrefetchReason');
+      }
+      if (selectedIds.includes('component-store')) {
+        reason += t('cleanConfirmComponentStoreReason');
+      }
+      if (selectedIds.includes('windows-update-downloads')) {
+        reason += t('cleanConfirmWindowsUpdateReason');
       }
       if (deepMode) {
         reason += t('cleanConfirmDeepCleanReason');
@@ -137,7 +157,7 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
         {cleanupState === 'idle' && (
           <button
             onClick={() => handleStartCleanup(false)}
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 || hasSelectedDeepOnlyTarget}
             className="bg-primary text-on-primary px-xl py-md rounded-lg font-label-md font-bold flex items-center gap-sm shadow-lg hover:shadow-primary/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined">bolt</span>
@@ -331,12 +351,25 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${riskColor}`}>
                             {riskText}
                           </span>
+                          {target.deepOnly && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-purple-100 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300">
+                              {t('cleanDeepOnly')}
+                            </span>
+                          )}
                         </div>
                         <p className="text-label-sm text-on-surface-variant truncate font-mono text-[11px] opacity-80">{target.path}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="font-label-md text-on-surface font-mono font-semibold">{formatBytes(target.estimatedBytes)}</p>
-                        <p className="text-[10px] text-green-600 font-bold">{t('cleanStatusReady')}</p>
+                        <p className="font-label-md text-on-surface font-mono font-semibold">
+                          {!target.estimateComplete && target.estimatedBytes === 0
+                            ? t('cleanEstimateSystem')
+                            : `${target.estimateComplete ? '' : '≥ '}${formatBytes(target.estimatedBytes)}`}
+                        </p>
+                        <p className="text-[10px] text-green-600 font-bold">
+                          {target.estimatedFileCount > 0
+                            ? t('cleanEstimateFiles', { count: target.estimatedFileCount })
+                            : t('cleanStatusReady')}
+                        </p>
                       </div>
                     </div>
                   );
@@ -394,9 +427,8 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
               <h4 className="font-label-md text-primary uppercase font-bold tracking-widest mb-xs">{t('cleanImpactReclaim')}</h4>
               <div className="flex items-baseline gap-xs text-primary mb-md">
                 <span className="text-[48px] font-black leading-none">
-                  {(getExpectedImpactBytes() / (1024 * 1024 * 1024)).toFixed(1)}
+                  {hasIncompleteEstimate ? '≥ ' : ''}{formatBytes(getExpectedImpactBytes())}
                 </span>
-                <span className="text-title-lg font-bold">GB</span>
               </div>
               <p className="text-label-sm text-on-surface-variant leading-relaxed">
                 {t('cleanImpactDesc')}
@@ -407,7 +439,7 @@ export const CleanupView: React.FC<CleanupViewProps> = ({ lang }) => {
             <div className="space-y-sm">
               <button
                 onClick={() => handleStartCleanup(false)}
-                disabled={selectedIds.length === 0}
+                disabled={selectedIds.length === 0 || hasSelectedDeepOnlyTarget}
                 className="w-full py-sm px-md bg-primary text-on-primary rounded-lg font-label-md font-bold hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-center shadow-md flex items-center justify-center gap-xs font-semibold"
               >
                 <span className="material-symbols-outlined">cleaning_services</span>

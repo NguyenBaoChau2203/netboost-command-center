@@ -16,7 +16,6 @@ Important constraints:
 
 - This is a local-only Windows utility UI.
 - Do not add cloud login, accounts, plans, logout, telemetry, backup, VPN, antivirus, CPU/RAM dashboard metrics, or OpenDNS.
-- npm -> pnpm is report-only. Do not create a "Migrate" action.
 - Cleanup targets must match the constitution.
 - The UI must show warnings and confirmation for risky cleanup.
 - The terminal/log surface must support per-file cleanup logs.
