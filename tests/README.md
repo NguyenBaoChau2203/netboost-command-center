@@ -30,7 +30,7 @@ Brand assets and Windows shortcut contract:
 .\tests\branding-assets.ps1
 ```
 
-This validates the Mochi Cat SVG structure, 1024×1024 PNG header, all seven ICO layers, Git ignore policy, and the target, working directory, icon, and version metadata of a disposable Windows shortcut. It does not launch NetBoost or request elevation.
+This verifies that the simplified SVG is absent, the canonical Mochi Cat PNG is the approved 1254×1254 RGBA file with the exact SHA-256 hash, and the ICO contains all seven required layers. It also validates Git ignore policy and the target, working directory, icon, and version metadata of a disposable Windows shortcut. It does not launch NetBoost or request elevation.
 
 pnpm migration policy:
 

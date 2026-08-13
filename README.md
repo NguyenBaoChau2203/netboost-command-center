@@ -113,9 +113,8 @@ Create the branded shortcut on the current user's desktop instead:
 
 The generated `.lnk` is machine-specific and ignored by Git. The committed brand files are:
 
-- `assets/brand/netboost-mochi-cat.svg` — editable vector source
-- `assets/brand/netboost-mochi-cat.png` — 1024×1024 preview/export
-- `assets/brand/netboost-mochi-cat.ico` — Windows icon with 16–256 px layers
+- `assets/brand/netboost-mochi-cat.png` — approved high-fidelity 1254×1254 canonical artwork
+- `assets/brand/netboost-mochi-cat.ico` — Windows icon derived from the canonical PNG, with 16–256 px layers
 
 ### 1 — Launch the CLI (Auto-Elevation)
 
@@ -256,7 +255,7 @@ In Fancy mode the same icons used in the Web UI are echoed in the terminal (🌐
 NetBoost_Command_Center/
 │
 ├── NetBoost_Command_Center.bat          # Launcher: auto-elevation + PS1 entry point
-├── assets/brand/                        # Mochi Cat SVG, PNG, and Windows ICO
+├── assets/brand/                        # Canonical Mochi Cat PNG and Windows ICO
 ├── tools/Create-NetBoostShortcut.ps1    # Creates a branded .lnk to the BAT launcher
 ├── LICENSE                              # MIT License
 ├── README.md                            # This file
