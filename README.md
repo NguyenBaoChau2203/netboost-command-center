@@ -128,6 +128,8 @@ After extracting the release ZIP, simply **double-click** `NetBoost Command Cent
 
 The EXE automatically detects whether it is running with Administrator privileges. If not, it relaunches itself with the Windows `runas` verb, preserving every command-line argument. No "Run as Administrator" right-click is required.
 
+The open-source EXE is not digitally code-signed, so Windows SmartScreen may identify it as an unknown publisher. Verify the downloaded ZIP with the accompanying `.sha256` file, or use the BAT fallback if your device policy blocks unsigned executables.
+
 ```powershell
 & '.\NetBoost Command Center.exe'
 & '.\NetBoost Command Center.exe' --web

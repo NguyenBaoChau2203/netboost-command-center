@@ -35,13 +35,8 @@ namespace NetBoostLauncher
                 {
                     try
                     {
-                        Process elevatedProcess = Process.Start(
+                        return RunProcessAndWait(
                             CreateElevationStartInfo(executablePath, arguments));
-                        if (elevatedProcess != null)
-                        {
-                            elevatedProcess.Dispose();
-                        }
-                        return 0;
                     }
                     catch (Win32Exception exception)
                     {
@@ -62,19 +57,8 @@ namespace NetBoostLauncher
                     return 2;
                 }
 
-                Process process = Process.Start(
+                return RunProcessAndWait(
                     CreatePowerShellStartInfo(applicationRoot, arguments));
-                if (process == null)
-                {
-                    ShowError("Windows không thể khởi động PowerShell cho NetBoost.");
-                    return 3;
-                }
-
-                using (process)
-                {
-                    process.WaitForExit();
-                    return process.ExitCode;
-                }
             }
             catch (Exception exception)
             {
@@ -167,6 +151,27 @@ namespace NetBoostLauncher
                 encoded.Add(QuoteWindowsArgument(argument));
             }
             return string.Join(" ", encoded.ToArray());
+        }
+
+        public static int RunProcessAndWait(ProcessStartInfo startInfo)
+        {
+            if (startInfo == null)
+            {
+                throw new ArgumentNullException("startInfo");
+            }
+
+            Process process = Process.Start(startInfo);
+            if (process == null)
+            {
+                throw new InvalidOperationException(
+                    "Windows did not return a process handle for the NetBoost launcher.");
+            }
+
+            using (process)
+            {
+                process.WaitForExit();
+                return process.ExitCode;
+            }
         }
 
         public static string QuoteWindowsArgument(string argument)

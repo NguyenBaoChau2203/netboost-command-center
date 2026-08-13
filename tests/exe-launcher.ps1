@@ -140,6 +140,12 @@ for ($index = 0; $index -lt $forwardedArguments.Count; $index++) {
     Assert-Equal $forwardedArguments[$index] $decodedElevationArguments[$index] "UAC argument $index is preserved"
 }
 
+$exitProbe = New-Object Diagnostics.ProcessStartInfo
+$exitProbe.FileName = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::System)) 'cmd.exe'
+$exitProbe.Arguments = '/d /c exit 37'
+$exitProbe.UseShellExecute = $false
+Assert-Equal 37 ([NetBoostLauncher.Program]::RunProcessAndWait($exitProbe)) 'launcher waits for a child process and propagates its exit code'
+
 if (Test-Path -LiteralPath $testRoot) {
     Remove-Item -LiteralPath $testRoot -Recurse -Force
 }

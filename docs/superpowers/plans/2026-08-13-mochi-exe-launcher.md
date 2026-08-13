@@ -6,7 +6,7 @@
 
 **Architecture:** A dependency-free C# Windows launcher resolves the PowerShell entry point relative to its own directory. It relaunches itself with UAC when needed, then starts Windows PowerShell and returns its exit code. PowerShell build scripts compile the launcher with the existing ICO and assemble the portable release deterministically.
 
-**Tech Stack:** C#/.NET Framework via Windows PowerShell 5.1 `Add-Type`, PowerShell tests, GitHub Release assets.
+**Tech Stack:** C#/.NET Framework via Windows PowerShell 5.1 `CSharpCodeProvider`, PowerShell tests, GitHub Release assets.
 
 ## Global Constraints
 
@@ -33,7 +33,7 @@
 - [ ] Write `tests/exe-launcher.ps1` first. It must require the source/build files, compile the C# in memory, round-trip difficult arguments through `CommandLineToArgvW`, assert the PowerShell and UAC process settings, build the EXE, verify GUI subsystem `2`, version `1.0.1`, and compare the embedded icon pixels with the canonical ICO.
 - [ ] Run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\exe-launcher.ps1` and verify it fails because the launcher files do not exist.
 - [ ] Implement `NetBoost.Launcher.cs` with safe Windows argument quoting, relative script resolution, UAC relaunch, PowerShell execution, UAC-cancel handling, and a clear message box for missing runtime files.
-- [ ] Implement `Build-NetBoostLauncher.ps1` using `Add-Type -OutputType WindowsApplication`, `/win32icon`, `/optimize+`, and `/platform:anycpu`.
+- [ ] Implement `Build-NetBoostLauncher.ps1` using `CSharpCodeProvider`, `/target:winexe`, `/win32icon`, `/optimize+`, and `/platform:anycpu`.
 - [ ] Ignore only `/NetBoost Command Center.exe`, run the launcher test, and verify it passes.
 - [ ] Commit the tested launcher increment.
 
@@ -72,4 +72,3 @@
 - [ ] Build the final release ZIP, extract it, run launcher/package smoke checks, and record the SHA-256.
 - [ ] Commit documentation, push the branch, create a ready PR, and squash merge after GitHub reports it clean.
 - [ ] Move the existing v1.0.1 tag to the merged commit, replace the public ZIP/checksum assets, and verify the downloaded public ZIP hash.
-
