@@ -4,6 +4,7 @@ $ErrorActionPreference = 'Continue'
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
 
 $AppName = 'NetBoost Command Center'
+$AppVersion = '1.1.0'
 $TaskName = 'NetBoost Auto DNS Optimizer'
 $ScriptPath = $PSCommandPath
 $RawArgs = @($args)
@@ -35,6 +36,7 @@ if ($Language -eq 'EN') {
     $T.ToolsSec       = "Tools"
     $T.PromptChoice   = "Select option"
     $T.InvalidChoice  = "Invalid option."
+    $T.InvalidArgument = "Unsupported command-line option(s): {0}"
     $T.PressAnyKey    = "Press any key to return to menu..."
 
     # Menu Items
@@ -54,7 +56,8 @@ if ($Language -eq 'EN') {
     $T.Menu14 = "Open Chris Titus WinUtil"
     $T.Menu15 = "View telemetry Dashboard"
     $T.Menu16 = "Switch interface language to Vietnamese"
-    $T.Menu17 = "Open Web UI (local browser)"
+    $T.Menu18 = "Manage Mole CLI (install / open / update / uninstall)"
+    $T.Menu19 = "Manage Win11Debloat (download / open / update / remove)"
     $T.Menu0  = "Exit program"
 
     # Task Outputs & Alerts
@@ -105,13 +108,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin is empty or some items are locked."
 
     $T.DashHead       = "NETBOOST DASHBOARD"
-    $T.WebStarting      = "Starting local Web UI backend server..."
-    $T.WebRunning       = "NetBoost Command Center local backend is running."
-    $T.WebBrowserOpen   = "Opening your default web browser..."
-    $T.WebBrowserErr    = "Could not open browser automatically. Please open the URL manually."
-    $T.WebKeepOpen      = "Keep this command prompt window open while using the Web UI."
-    $T.WebAccessAt      = "You can access the Web UI at: {0}"
-    $T.WebPressToStop   = "Press Q or ESC to stop the Web UI and return to the main CLI menu."
 
     $T.CliCleanupTitle = "CLI CLEANUP CENTER"
     $T.CliCleanupSafe = "SAFE CLEANUP"
@@ -157,6 +153,7 @@ if ($Language -eq 'EN') {
     $T.ToolsSec       = "Tools"
     $T.PromptChoice   = "Chon muc (Select option)"
     $T.InvalidChoice  = "Lua chon khong hop le."
+    $T.InvalidArgument = "Tham so khong duoc ho tro: {0}"
     $T.PressAnyKey    = "Nhan phim bat ky de quay lai menu..."
 
     # Menu Items
@@ -176,7 +173,8 @@ if ($Language -eq 'EN') {
     $T.Menu14 = "Mo Chris Titus WinUtil"
     $T.Menu15 = "Xem bang thong tin (Dashboard)"
     $T.Menu16 = "Switch interface language to English"
-    $T.Menu17 = "Mo giao dien Web UI (trinh duyet local)"
+    $T.Menu18 = "Quan ly Mole CLI (cai / mo / cap nhat / go cai dat)"
+    $T.Menu19 = "Quan ly Win11Debloat (tai / mo / cap nhat / go)"
     $T.Menu0  = "Thoat chuong trinh"
 
     # Task Outputs & Alerts
@@ -227,13 +225,6 @@ if ($Language -eq 'EN') {
     $T.CleanBinEmpty  = "Recycle Bin trong hoac co muc dang bi khoa."
 
     $T.DashHead       = "BANG THONG TIN (NETBOOST DASHBOARD)"
-    $T.WebStarting      = "Dang khoi dong server Web UI local..."
-    $T.WebRunning       = "NetBoost Command Center local backend dang hoat dong."
-    $T.WebBrowserOpen   = "Dang tu dong mo trinh duyet..."
-    $T.WebBrowserErr    = "Khong the tu dong mo trinh duyet. Vui long tu truy cap URL."
-    $T.WebKeepOpen      = "Giu nguyen cua so nay (command prompt) khi dang dung Web UI."
-    $T.WebAccessAt      = "Ban co the truy cap Web UI tai: {0}"
-    $T.WebPressToStop   = "Nhan phim Q hoac ESC de dung Web UI va quay lai menu."
 
     $T.CliCleanupTitle = "TRUNG TAM DON DEP CLI"
     $T.CliCleanupSafe = "DON DEP AN TOAN"
@@ -351,7 +342,6 @@ function Get-UiIcon {
             'SysCache'     { return '[Sys]' }
             'WinUtil'      { return '[Tool]' }
             'Dashboard'    { return '[Dash]' }
-            'Web'          { return '[Web]' }
             'Exit'         { return '[Exit]' }
             default        { return '' }
         }
@@ -381,7 +371,6 @@ function Get-UiIcon {
             'SysCache'     { return '⚙️' }
             'WinUtil'      { return '🛠️' }
             'Dashboard'    { return '📊' }
-            'Web'          { return '🌐' }
             'Exit'         { return '🚪' }
             default        { return '' }
         }
@@ -934,8 +923,7 @@ function Remove-FolderContents {
         [int]$MinAgeMinutes = 0,
         [string[]]$IncludePatterns = @('*'),
         [string[]]$ExcludePathSegments = @(),
-        [string]$TargetId = '',
-        [string]$JobId = ''
+        [string]$TargetId = ''
     )
 
     $filesDeleted = 0
@@ -944,17 +932,17 @@ function Remove-FolderContents {
     $dirsFailed = 0
 
     Write-UiHeader ($T.CleanRunHead -f $Label) 'Cleanup'
-    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $Label -Path $Path -Message 'Starting cleanup target' -JobId $JobId
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $Label -Path $Path -Message 'Starting cleanup target'
 
     if (-not (Test-Path -LiteralPath $Path)) {
         Write-Status Warning ($T.CleanFolderNotFound -f $Path)
-        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $Label -Path $Path -Message 'Cleanup folder not found' -JobId $JobId
+        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $Label -Path $Path -Message 'Cleanup folder not found'
         return
     }
 
     if (-not (Test-SafeCleanupRoot -Path $Path)) {
         $message = "Unsafe cleanup root rejected: $Path"
-        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $Path -Message $message -JobId $JobId
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $Path -Message $message
         throw $message
     }
 
@@ -968,14 +956,14 @@ function Remove-FolderContents {
             $bytes = [int64]$file.Length
             Remove-Item -LiteralPath $file.FullName -Force -ErrorAction Stop
             $filesDeleted++
-            Write-CleanupEvent -Level DELETE_OK -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes $bytes -Message 'Deleted file' -JobId $JobId
+            Write-CleanupEvent -Level DELETE_OK -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes $bytes -Message 'Deleted file'
         } catch {
             if (Test-CleanupLockedError -ErrorRecord $_) {
                 $filesFailed++
-                Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message -JobId $JobId
+                Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message
             } else {
                 $filesFailed++
-                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message -JobId $JobId
+                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message
             }
         }
     }
@@ -1001,14 +989,14 @@ function Remove-FolderContents {
         try {
             Remove-Item -LiteralPath $dir.FullName -Force -ErrorAction Stop
             $dirsDeleted++
-            Write-CleanupEvent -Level DELETE_DIR -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message 'Deleted empty directory' -JobId $JobId
+            Write-CleanupEvent -Level DELETE_DIR -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message 'Deleted empty directory'
         } catch {
             if (Test-CleanupLockedError -ErrorRecord $_) {
                 $dirsFailed++
-                Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message -JobId $JobId
+                Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message
             } else {
                 $dirsFailed++
-                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message -JobId $JobId
+                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message
             }
         }
     }
@@ -1027,7 +1015,7 @@ function Remove-FolderContents {
         Write-Line ("  {0}: {1}" -f $T.CleanDirsLock, $dirsFailed) Red
     }
 
-    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $Label -Path $Path -Message ("FilesDeleted={0};DirsDeleted={1};SkippedOrFailedFiles={2};SkippedOrFailedDirs={3}" -f $filesDeleted, $dirsDeleted, $filesFailed, $dirsFailed) -JobId $JobId
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $Label -Path $Path -Message ("FilesDeleted={0};DirsDeleted={1};SkippedOrFailedFiles={2};SkippedOrFailedDirs={3}" -f $filesDeleted, $dirsDeleted, $filesFailed, $dirsFailed)
 }
 
 function Get-CliCleanupActionDefinitions {
@@ -1383,8 +1371,7 @@ function Invoke-WithTemporarilyStoppedServices {
 function Invoke-WindowsUpdateDownloadCleanup {
     param(
         [string]$TargetId = 'windows-update-downloads',
-        [string]$TargetLabel = 'Windows Update downloads',
-        [string]$JobId = ''
+        [string]$TargetLabel = 'Windows Update downloads'
     )
 
     Ensure-Admin
@@ -1393,49 +1380,47 @@ function Invoke-WindowsUpdateDownloadCleanup {
     }
 
     $updateDownloadPath = Join-Path $env:SystemRoot 'SoftwareDistribution\Download'
-    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Temporarily stopping running Windows Update services before cleanup' -JobId $JobId
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Temporarily stopping running Windows Update services before cleanup'
 
     $cleanupAction = {
-        Remove-FolderContents -Path $updateDownloadPath -Label $TargetLabel -TargetId $TargetId -JobId $JobId
+        Remove-FolderContents -Path $updateDownloadPath -Label $TargetLabel -TargetId $TargetId
     }.GetNewClosure()
 
     try {
         Invoke-WithTemporarilyStoppedServices -ServiceNames @('wuauserv', 'BITS') -Action $cleanupAction
     } catch {
-        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message $_.Exception.Message -JobId $JobId
+        Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message $_.Exception.Message
         throw
     }
 
-    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Windows Update download cleanup completed and original service states were restored' -JobId $JobId
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path $updateDownloadPath -Message 'Windows Update download cleanup completed and original service states were restored'
 }
 
 function Invoke-DeliveryOptimizationCleanup {
     param(
         [string]$TargetId = 'delivery-optimization',
-        [string]$TargetLabel = 'Delivery Optimization cache',
-        [string]$JobId = ''
+        [string]$TargetLabel = 'Delivery Optimization cache'
     )
 
     Ensure-Admin
-    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Starting supported Delivery Optimization cache cleanup' -JobId $JobId
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Starting supported Delivery Optimization cache cleanup'
 
     $command = Get-Command -Name Delete-DeliveryOptimizationCache -ErrorAction SilentlyContinue
     if (-not $command) {
         $message = 'Delete-DeliveryOptimizationCache is not available on this Windows installation.'
         Write-Status Warning $message
-        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message $message -JobId $JobId
+        Write-CleanupEvent -Level WARN -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message $message
         return
     }
 
     Delete-DeliveryOptimizationCache -Force -ErrorAction Stop
-    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Delivery Optimization cache cleanup completed; pinned files were preserved' -JobId $JobId
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'Delivery Optimization cache' -Message 'Delivery Optimization cache cleanup completed; pinned files were preserved'
 }
 
 function Invoke-ComponentStoreCleanup {
     param(
         [string]$TargetId = 'component-store',
-        [string]$TargetLabel = 'Windows Component Store',
-        [string]$JobId = ''
+        [string]$TargetLabel = 'Windows Component Store'
     )
 
     Ensure-Admin
@@ -1444,13 +1429,13 @@ function Invoke-ComponentStoreCleanup {
         throw 'DISM was not found in the Windows System32 directory.'
     }
 
-    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Starting supported Windows Component Store cleanup' -JobId $JobId
+    Write-CleanupEvent -Level INFO -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Starting supported Windows Component Store cleanup'
     & $dismPath /Online /Cleanup-Image /StartComponentCleanup | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw ("DISM Component Store cleanup failed with exit code {0}." -f $LASTEXITCODE)
     }
 
-    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Windows Component Store cleanup completed without ResetBase' -JobId $JobId
+    Write-CleanupEvent -Level SUMMARY -TargetId $TargetId -TargetLabel $TargetLabel -Path 'DISM /StartComponentCleanup' -Message 'Windows Component Store cleanup completed without ResetBase'
 }
 
 function Clean-System {
@@ -1531,7 +1516,7 @@ function Show-Dashboard {
 
 function Show-Help {
     Write-Line ''
-    Write-Line $AppName White
+    Write-Line ("{0} v{1}" -f $AppName, $AppVersion) White
     Write-Line ''
     Write-Line 'Usage:' Cyan
     Write-Line '  NetBoost_Command_Center.bat' Green
@@ -1541,7 +1526,9 @@ function Show-Help {
     Write-Line '  NetBoost_Command_Center.bat --reset-dns' Green
     Write-Line '  NetBoost_Command_Center.bat --status' Green
     Write-Line '  NetBoost_Command_Center.bat --dashboard' Green
-    Write-Line '  NetBoost_Command_Center.bat --web --port 47812' Green
+    Write-Line '  NetBoost_Command_Center.bat --mole' Green
+    Write-Line '  NetBoost_Command_Center.bat --win11debloat' Green
+    Write-Line '  NetBoost_Command_Center.bat --detailed-cleanup-logs' Green
     Write-Line '  NetBoost_Command_Center.bat --lang en' Green
     Write-Line '  NetBoost_Command_Center.bat --lang vi' Green
     Write-Line ''
@@ -1559,7 +1546,9 @@ function Switch-UiLanguage {
 function Show-Menu {
     param(
         [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
-        [scriptblock]$CleanupCenter = { Show-CleanupCenter }
+        [scriptblock]$CleanupCenter = { Show-CleanupCenter },
+        [scriptblock]$MoleCenter = { Show-NetBoostMoleCenter },
+        [scriptblock]$DebloatCenter = { Show-NetBoostDebloatCenter }
     )
 
     Ensure-Admin
@@ -1589,7 +1578,8 @@ function Show-Menu {
         Write-MenuItem '14' $T.Menu14 Cyan 'WinUtil'
         Write-MenuItem '15' $T.Menu15 Cyan 'Dashboard'
         Write-MenuItem '16' $T.Menu16 Cyan 'Tools'
-        Write-MenuItem '17' $T.Menu17 Green 'Web'
+        Write-MenuItem '18' $T.Menu18 Cyan 'Tools'
+        Write-MenuItem '19' $T.Menu19 Cyan 'Tools'
         Write-MenuItem '0' $T.Menu0 Red 'Exit'
         Write-Line ''
 
@@ -1613,15 +1603,8 @@ function Show-Menu {
                 '14' { Open-ChrisTitus; Pause-Back }
                 '15' { Show-Dashboard; Pause-Back }
                 '16' { Switch-UiLanguage }
-                '17' {
-                    $webPort = 47812
-                    if (Get-Command Start-NetBoostWebBackend -ErrorAction SilentlyContinue) {
-                        Start-NetBoostWebBackend -Port $webPort
-                    } else {
-                        Write-Status Error 'Local backend module not found.'
-                    }
-                    Pause-Back
-                }
+                '18' { & $MoleCenter }
+                '19' { & $DebloatCenter }
                 '0' { return }
                 default { Write-Status Error $T.InvalidChoice; Start-Sleep -Milliseconds 700 }
             }
@@ -1635,33 +1618,15 @@ function Show-Menu {
 
 function Parse-Args {
     $mode = 'Menu'
-    $webPort = 47812
+    $invalidArguments = @()
+    $detailedCleanupLogs = $false
 
     for ($i = 0; $i -lt $RawArgs.Count; $i++) {
         $arg = $RawArgs[$i].ToLowerInvariant()
         switch ($arg) {
             '--lang' { $i++ }
             '-lang' { $i++ }
-            '--web' { $mode = 'Web' }
-            '-web' { $mode = 'Web' }
-            '--port' {
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $candidatePort = 0
-                    if ([int]::TryParse($RawArgs[$i + 1], [ref]$candidatePort) -and $candidatePort -gt 0 -and $candidatePort -lt 65536) {
-                        $webPort = $candidatePort
-                    }
-                    $i++
-                }
-            }
-            '-port' {
-                if ($i + 1 -lt $RawArgs.Count) {
-                    $candidatePort = 0
-                    if ([int]::TryParse($RawArgs[$i + 1], [ref]$candidatePort) -and $candidatePort -gt 0 -and $candidatePort -lt 65536) {
-                        $webPort = $candidatePort
-                    }
-                    $i++
-                }
-            }
+            '--detailed-cleanup-logs' { $detailedCleanupLogs = $true }
             '--auto-dns' { $mode = 'AutoDns' }
             '-autodns' { $mode = 'AutoDns' }
             '-auto-dns' { $mode = 'AutoDns' }
@@ -1676,40 +1641,43 @@ function Parse-Args {
             '-status' { $mode = 'Status' }
             '--dashboard' { $mode = 'Dashboard' }
             '-dashboard' { $mode = 'Dashboard' }
+            '--mole' { $mode = 'Mole' }
+            '--win11debloat' { $mode = 'Win11Debloat' }
             '--help' { $mode = 'Help' }
             '-help' { $mode = 'Help' }
             '/?' { $mode = 'Help' }
+            default { $invalidArguments += $RawArgs[$i] }
         }
     }
 
     return [pscustomobject]@{
-        Mode = $mode
-        WebPort = $webPort
+        Mode = if ($invalidArguments.Count) { 'Invalid' } else { $mode }
+        InvalidArguments = $invalidArguments
+        DetailedCleanupLogs = $detailedCleanupLogs
     }
 }
 
-$backendScript = Join-Path (Split-Path -Parent $PSScriptRoot) 'backend\NetBoost.LocalWeb.ps1'
-if (Test-Path -LiteralPath $backendScript) {
-    . $backendScript
-}
+. (Join-Path $PSScriptRoot 'NetBoost.Cleanup.ps1')
+. (Join-Path $PSScriptRoot 'NetBoost.Mole.ps1')
+. (Join-Path $PSScriptRoot 'NetBoost.Win11Debloat.ps1')
 
 $parsed = Parse-Args
+$script:DetailedCleanupLogs = $parsed.DetailedCleanupLogs
 
 switch ($parsed.Mode) {
     'Help' { Show-Help }
     'Status' { Show-DnsStatus }
     'Dashboard' { Show-Dashboard }
+    'Mole' { Show-NetBoostMoleCenter }
+    'Win11Debloat' { Show-NetBoostDebloatCenter }
     'AutoDns' { Invoke-AutoDns }
     'Google' { Set-DnsProvider -ProviderName Google }
     'Cloudflare' { Set-DnsProvider -ProviderName Cloudflare }
     'ResetDns' { Reset-DnsToAuto }
-    'Web' {
-        if (Get-Command Start-NetBoostWebBackend -ErrorAction SilentlyContinue) {
-            Start-NetBoostWebBackend -Port $parsed.WebPort
-        } else {
-            Write-Status Error 'Local backend module not found.'
-            exit 1
-        }
+    'Invalid' {
+        Write-Status Error ($T.InvalidArgument -f ($parsed.InvalidArguments -join ', '))
+        Show-Help
+        exit 2
     }
     default { Show-Menu }
 }
