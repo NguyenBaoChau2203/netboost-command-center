@@ -1,65 +1,27 @@
-# Tests
+# PowerShell tests
 
-Suggested test groups:
-
-- CLI smoke checks
-- PowerShell structured-output checks
-- Safe cleanup fixture checks
-- Local web API contract checks
-- Frontend build and visual smoke checks
-
-Current backend smoke:
+Run these from the repository root in Windows PowerShell 5.1. Each suite uses disposable fixtures, read-only checks or injected actions; no actual DNS changes, task registration, system cleanup or debloat is performed.
 
 ```powershell
-.\tests\backend-smoke.ps1
-```
-
-This starts `NetBoost_Command_Center.bat --web` on a random local port, verifies health/dashboard/static UI serving, checks the 15-target cleanup contract, confirms mutating requests need a session token, verifies non-admin privileged actions return `adminRequired`, and confirms the removed npm scanner routes stay absent. It does not change DNS, scheduled tasks, or system cleanup targets.
-
-CLI Cleanup Center behavior:
-
-```powershell
+.\tests\terminal-only.ps1
 .\tests\cli-cleanup-center.ps1
-```
-
-This verifies the Safe, confirmation-required, and Advanced target mappings; exact `CONFIRM` behavior; corrected main-menu routing and copy; and the `[10]` through `[13]` shortcuts. It injects fake input and a fake cleanup dispatcher, so it never deletes real files or invokes Windows maintenance actions.
-
-Cleanup policy safety:
-
-```powershell
 .\tests\cleanup-safety.ps1
-```
-
-This uses disposable temporary folders and injected service fakes to verify canonical-root guards, candidate containment, Prefetch age/pattern policy, deep-only enforcement, rejection of unsupported target IDs, and Windows Update service restoration on success, cleanup failure, and stop failure. It does not request Administrator rights, stop real services, or delete system files.
-
-Brand assets and Windows shortcut contract:
-
-```powershell
-.\tests\branding-assets.ps1
-```
-
-This verifies that the simplified SVG is absent, the canonical Mochi Cat PNG is the approved 1254×1254 RGBA file with the exact SHA-256 hash, and the ICO contains all seven required layers. It also builds the local EXE and validates Git ignore policy plus the target, working directory, icon, and version metadata of a disposable Windows shortcut. It does not launch NetBoost or request elevation.
-
-Mochi Cat EXE launcher:
-
-```powershell
+.\tests\mole-integration.ps1
+.\tests\win11debloat-integration.ps1
 .\tests\exe-launcher.ps1
-```
-
-This compiles the C# launcher in memory and as a Windows EXE, round-trips difficult command-line arguments through the native Windows parser, verifies UAC and PowerShell process settings, checks the GUI subsystem and version metadata, and compares the embedded icon pixel-for-pixel with the 32-pixel ICO layer. It does not show a UAC dialog or execute the real NetBoost runtime.
-
-Portable release package:
-
-```powershell
+.\tests\branding-assets.ps1
 .\tests\release-package.ps1
 ```
 
-This builds and extracts the v1.0.1 portable ZIP, verifies all runtime files including the branded EXE, rejects development-only files, parses the packaged PowerShell scripts, creates a disposable EXE-targeting shortcut, and verifies the SHA-256 sidecar file.
+| Suite | Coverage |
+|---|---|
+| terminal-only | Removed components/dependencies absent, HTTP functions absent, all 15 cleanup targets retained, legacy flags rejected without launching anything, CLI logging privacy, menu 18/19 routing |
+| cli-cleanup-center | Safe/confirmed/advanced mappings, exact CONFIRM behavior, localized labels and main-menu routing |
+| cleanup-safety | Canonical roots, child containment, Prefetch policies, deep/confirmation guards, Windows Update service restoration and synchronous dispatch |
+| mole-integration | Version/channel detection, official release URLs/digests, install/update/uninstall confirmation, local ZIP fixtures and offline behavior |
+| win11debloat-integration | Dated releases, portable ownership, CLI/WhatIf arguments, update failures, unknown-file and registry-backup preservation |
+| exe-launcher | Windows argument round-trips, UAC process settings, exit codes, native EXE metadata and embedded icon |
+| branding-assets | Canonical artwork/ICO, generated launcher and disposable Windows shortcut |
+| release-package | Terminal-only ZIP contents, required modules/guides, PowerShell parsing, shortcut and SHA-256 sidecar |
 
-pnpm migration policy:
-
-```powershell
-.\tests\package-manager-policy.ps1
-```
-
-This verifies version 1.0.1, the pinned pnpm package manager, the committed `pnpm-lock.yaml`, absence of npm's `package-lock.json`, pnpm store ignore policy, and pnpm-only README commands.
+The optional-tool tests use fake downloads and scripts that must not run actual maintenance. Launcher tests do not show a UAC prompt or start the real runtime. Packaging and branding tests may rebuild ignored local artifacts.

@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$version = '1.0.1'
+$version = '1.1.0'
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $launcherBuilderPath = Join-Path $repoRoot 'tools\Build-NetBoostLauncher.ps1'
 
@@ -45,10 +45,13 @@ $requiredInputs = @(
     (Join-Path $repoRoot 'README.md'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.ico'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png'),
-    (Join-Path $repoRoot 'docs\releases\v1.0.1.md'),
-    (Join-Path $repoRoot 'src\backend\NetBoost.LocalWeb.ps1'),
+    (Join-Path $repoRoot 'docs\releases\v1.1.0.md'),
+    (Join-Path $repoRoot 'docs\mole-cli.md'),
+    (Join-Path $repoRoot 'docs\win11debloat-cli.md'),
     (Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'),
-    (Join-Path $repoRoot 'src\web\dist\index.html'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Cleanup.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Mole.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Win11Debloat.ps1'),
     (Join-Path $repoRoot 'tools\Create-NetBoostShortcut.ps1')
 )
 foreach ($requiredInput in $requiredInputs) {
@@ -70,9 +73,7 @@ $stageDirectories = @(
     '',
     'assets\brand',
     'docs\releases',
-    'src\backend',
     'src\powershell',
-    'src\web\dist',
     'tools'
 )
 foreach ($relativeDirectory in $stageDirectories) {
@@ -95,23 +96,22 @@ Copy-Item -LiteralPath `
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png') `
     -Destination (Join-Path $stagePath 'assets\brand')
 
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.0.1.md') `
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.1.0.md') `
     -Destination (Join-Path $stagePath 'docs\releases')
 
-Copy-Item -LiteralPath `
-    (Join-Path $repoRoot 'src\backend\NetBoost.LocalWeb.ps1'), `
-    (Join-Path $repoRoot 'src\backend\README.md') `
-    -Destination (Join-Path $stagePath 'src\backend')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\mole-cli.md') `
+    -Destination (Join-Path $stagePath 'docs')
+
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\win11debloat-cli.md') `
+    -Destination (Join-Path $stagePath 'docs')
 
 Copy-Item -LiteralPath `
     (Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Cleanup.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Mole.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.Win11Debloat.ps1'), `
     (Join-Path $repoRoot 'src\powershell\README.md') `
     -Destination (Join-Path $stagePath 'src\powershell')
-
-Copy-Item -Path (Join-Path $repoRoot 'src\web\dist\*') `
-    -Destination (Join-Path $stagePath 'src\web\dist') `
-    -Recurse `
-    -Force
 
 Copy-Item -LiteralPath (Join-Path $repoRoot 'tools\Create-NetBoostShortcut.ps1') `
     -Destination (Join-Path $stagePath 'tools')

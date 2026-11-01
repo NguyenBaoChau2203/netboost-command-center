@@ -184,7 +184,7 @@ try {
 
     $prefetchSafeModeRejected = $false
     try {
-        Start-WebCleanupJob -TargetIds @('windows-prefetch') -Deep $false -Confirmed $true | Out-Null
+        Resolve-CleanupTargetSelection -TargetIds @('windows-prefetch') -Deep $false -Confirmed $true | Out-Null
     } catch {
         $prefetchSafeModeRejected = $_.Exception.Message -like 'Deep mode is required*'
     }
@@ -192,7 +192,7 @@ try {
 
     $windowsUpdateSafeModeRejected = $false
     try {
-        Start-WebCleanupJob -TargetIds @('windows-update-downloads') -Deep $false -Confirmed $true | Out-Null
+        Resolve-CleanupTargetSelection -TargetIds @('windows-update-downloads') -Deep $false -Confirmed $true | Out-Null
     } catch {
         $windowsUpdateSafeModeRejected = $_.Exception.Message -like 'Deep mode is required*'
     }
@@ -200,11 +200,11 @@ try {
 
     $unsupportedTargetRejected = $false
     try {
-        Start-WebCleanupJob -TargetIds @('not-a-cleanup-target') -Deep $false -Confirmed $true | Out-Null
+        Resolve-CleanupTargetSelection -TargetIds @('not-a-cleanup-target') -Deep $false -Confirmed $true | Out-Null
     } catch {
         $unsupportedTargetRejected = $_.Exception.Message -like '*supported cleanup targets*'
     }
-    Assert-True $unsupportedTargetRejected 'An unsupported cleanup target must be rejected before a job starts.'
+    Assert-True $unsupportedTargetRejected 'An unsupported cleanup target must be rejected before dispatch.'
 
     Assert-True ($null -ne (Get-Command Resolve-CleanupTargetSelection -ErrorAction SilentlyContinue)) 'Shared cleanup selection validation is missing.'
     Assert-True ($null -ne (Get-Command Invoke-CleanupTargetSet -ErrorAction SilentlyContinue)) 'Shared synchronous cleanup dispatcher is missing.'
@@ -223,41 +223,20 @@ try {
     }
     Assert-True $confirmationRejected 'Confirmation-required targets must be rejected before dispatch.'
 
-    $script:webWorkerDispatch = $null
-    function Update-WebJob {
-        param([string]$JobId, [hashtable]$Values)
+    $script:fixtureDispatch = $null
+    function Get-CleanupTargetDefinitions {
+        New-CleanupTargetDefinition -Id 'fixture-target' -Label 'Fixture target' -DisplayPath $sandboxRoot -Paths @($sandboxRoot) `
+            -Risk low -RequiresConfirmation $false -SafeMinAgeMinutes 1440 -DeepMinAgeMinutes 60 -IncludePatterns @('*.tmp') -ExcludePathSegments @('keep')
     }
-    function Write-CleanupEvent {
-        param($Level, $TargetId, $TargetLabel, $Path, $Bytes, $Message, $JobId)
+    function Remove-FolderContents {
+        param($Path, $Label, $MinAgeMinutes, $IncludePatterns, $ExcludePathSegments, $TargetId)
+        $script:fixtureDispatch = [pscustomobject]@{ path=$Path; minAge=$MinAgeMinutes; patterns=@($IncludePatterns); exclusions=@($ExcludePathSegments); targetId=$TargetId }
     }
-    function Invoke-CleanupTargetSet {
-        param(
-            [string[]]$TargetIds,
-            [bool]$Deep,
-            [bool]$Confirmed,
-            [string]$JobId = '',
-            [scriptblock]$OnTargetStart = $null
-        )
-
-        $script:webWorkerDispatch = [pscustomobject]@{
-            targetIds = @($TargetIds)
-            deep = $Deep
-            confirmed = $Confirmed
-            jobId = $JobId
-        }
-        if ($null -ne $OnTargetStart) {
-            & $OnTargetStart ([pscustomobject]@{ label = 'Fixture target' }) 1 1
-        }
-    }
-
-    Invoke-WebCleanupJobWorker -Payload @{
-        JobId = 'fixture-job'
-        TargetIds = @('fixture-target')
-        Deep = $false
-    }
-    Assert-True (($script:webWorkerDispatch.targetIds -join ',') -eq 'fixture-target') 'The Web worker must forward requested target IDs to the shared dispatcher.'
-    Assert-True (-not $script:webWorkerDispatch.deep -and $script:webWorkerDispatch.confirmed) 'The Web worker must preserve safe mode after HTTP confirmation.'
-    Assert-True ($script:webWorkerDispatch.jobId -eq 'fixture-job') 'The Web worker must preserve the cleanup job ID.'
+    Invoke-CleanupTargetSet -TargetIds @('fixture-target') -Deep $false -Confirmed $false
+    Assert-True ($script:fixtureDispatch.path -eq $sandboxRoot -and $script:fixtureDispatch.targetId -eq 'fixture-target') 'Terminal dispatcher must use the resolved path and target identity.'
+    Assert-True ($script:fixtureDispatch.minAge -eq 1440 -and ($script:fixtureDispatch.patterns -join ',') -eq '*.tmp' -and ($script:fixtureDispatch.exclusions -join ',') -eq 'keep') 'Terminal dispatcher must preserve safe retention, patterns and exclusions.'
+    Invoke-CleanupTargetSet -TargetIds @('fixture-target') -Deep $true -Confirmed $true
+    Assert-True ($script:fixtureDispatch.minAge -eq 60) 'Confirmed advanced dispatch must use deep retention.'
 
     [pscustomobject]@{
         ok = $true

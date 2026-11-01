@@ -91,7 +91,7 @@ try {
     Assert-True ([IO.Path]::GetFullPath($shortcut.TargetPath) -eq [IO.Path]::GetFullPath($expectedLauncherPath)) 'The branded shortcut must prefer NetBoost Command Center.exe.'
     Assert-True ([IO.Path]::GetFullPath($shortcut.WorkingDirectory) -eq [IO.Path]::GetFullPath($repoRoot)) 'The branded shortcut working directory must be the repository root.'
     Assert-True ($shortcut.IconLocation -eq "$icoPath,0") 'The branded shortcut must use the Mochi Cat ICO at index zero.'
-    Assert-True ($shortcut.Description -like '*1.0.1*') 'The branded shortcut description must identify version 1.0.1.'
+    Assert-True ($shortcut.Description -like '*1.1.0*') 'The branded shortcut description must identify version 1.1.0.'
 
     $conflictingDestinationRejected = $false
     try {

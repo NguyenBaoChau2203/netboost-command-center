@@ -1,14 +1,5 @@
-# Spec Kit Workspace
+# Feature specifications
 
-This folder stores Spec Kit-style artifacts for larger changes.
+The previous local Web Command Center feature was removed at the owner's request. The current application runs in the terminal; its architecture is documented in docs/architecture/project-layout.md. The standalone CLI cleanup engine and optional Mole/Win11Debloat integrations remain supported.
 
-Recommended flow:
-
-1. `spec.md` defines what and why.
-2. `plan.*.md` defines implementation strategy by owner.
-3. `contracts/` defines cross-boundary API/data expectations.
-4. `tasks.md` breaks the plans into reviewable work.
-5. `review.*.md` prepares final review prompts and checklists.
-
-Current active feature:
-- `001-local-web-command-center`
+Use this directory for specifications of future approved features. Historical design notes remain under docs/superpowers.

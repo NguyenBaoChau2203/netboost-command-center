@@ -1,14 +1,10 @@
-.playwright-cli/
 .codegraph/
-/.pnpm-store/
 .gitnexus/
 .history-backup/
 .superpowers/
 .stitch_review*/
 .specify/
-src/backend/settings.local.json
 build/
-node_modules/
 .env
 .env.*
 *.log

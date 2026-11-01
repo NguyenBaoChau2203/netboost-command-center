@@ -46,10 +46,10 @@ if (Test-Path -LiteralPath $testRoot) {
 
 try {
     $release = & $releaseBuilderPath -OutputDirectory $testRoot
-    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.0.1.zip'
+    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.1.0.zip'
     $checksumPath = "$zipPath.sha256"
 
-    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.0.1 ZIP'
+    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.1.0 ZIP'
     Assert-True (Test-Path -LiteralPath $checksumPath -PathType Leaf) 'release builder produces the SHA-256 file'
     Assert-Equal ([IO.Path]::GetFullPath($zipPath)) ([IO.Path]::GetFullPath($release.ZipPath)) 'release metadata identifies the ZIP'
 
@@ -62,14 +62,14 @@ try {
         'README.md',
         'assets\brand\netboost-mochi-cat.ico',
         'assets\brand\netboost-mochi-cat.png',
-        'docs\releases\v1.0.1.md',
-        'src\backend\NetBoost.LocalWeb.ps1',
-        'src\backend\README.md',
+        'docs\releases\v1.1.0.md',
+        'docs\mole-cli.md',
+        'docs\win11debloat-cli.md',
         'src\powershell\NetBoost_Command_Center.ps1',
+        'src\powershell\NetBoost.Cleanup.ps1',
+        'src\powershell\NetBoost.Mole.ps1',
+        'src\powershell\NetBoost.Win11Debloat.ps1',
         'src\powershell\README.md',
-        'src\web\dist\index.html',
-        'src\web\dist\favicon.svg',
-        'src\web\dist\icons.svg',
         'tools\Create-NetBoostShortcut.ps1'
     )
     foreach ($relativePath in $requiredFiles) {
@@ -81,15 +81,20 @@ try {
         $_.Name -in @('package.json', 'package-lock.json', 'pnpm-lock.yaml') -or
         $_.FullName -match '[\\/]node_modules[\\/]'
     })
-    Assert-Equal 0 $developmentFiles.Count 'release excludes development-only Web files'
+    Assert-Equal 0 $developmentFiles.Count 'release excludes JavaScript dependencies and development files'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'src\web'))) 'terminal release must not contain a Web UI'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $extractRoot 'src\backend'))) 'terminal release must not contain an HTTP backend'
+    Assert-Equal 0 @(Get-ChildItem -LiteralPath $extractRoot -Recurse -File | Where-Object { $_.Extension -in @('.html','.css','.js','.ts','.tsx') }).Count 'terminal release contains no browser assets'
 
     $exePath = Join-Path $extractRoot 'NetBoost Command Center.exe'
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($exePath)
-    Assert-Equal '1.0.1' $version.ProductVersion 'packaged EXE reports product version 1.0.1'
+    Assert-Equal '1.1.0' $version.ProductVersion 'packaged EXE reports product version 1.1.0'
 
     foreach ($relativePath in @(
-        'src\backend\NetBoost.LocalWeb.ps1',
         'src\powershell\NetBoost_Command_Center.ps1',
+        'src\powershell\NetBoost.Cleanup.ps1',
+        'src\powershell\NetBoost.Mole.ps1',
+        'src\powershell\NetBoost.Win11Debloat.ps1',
         'tools\Create-NetBoostShortcut.ps1'
     )) {
         $tokens = $null
@@ -120,7 +125,7 @@ try {
 
     $actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw).Trim()
-    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.0.1.zip" $checksumLine 'checksum file matches the release ZIP'
+    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.1.0.zip" $checksumLine 'checksum file matches the release ZIP'
     Assert-Equal $actualHash $release.Sha256 'release metadata reports the ZIP checksum'
 } finally {
     if (Test-Path -LiteralPath $testRoot) {
@@ -131,7 +136,7 @@ try {
 [pscustomobject]@{
     ok = $true
     assertions = $assertions
-    version = '1.0.1'
+    version = '1.1.0'
     exe = 'packaged'
     shortcut = 'verified'
     checksum = 'verified'
