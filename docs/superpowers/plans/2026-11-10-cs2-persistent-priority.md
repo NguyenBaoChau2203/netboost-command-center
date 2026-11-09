@@ -48,7 +48,7 @@ Files: src/powershell/NetBoost_Command_Center.ps1, CS2 menu, README.md, docs/cs2
 - [x] Review the full diff inline against the specification and regression requirements.
 - [x] Run all tests/*.ps1 in Windows PowerShell 5.1 and build/inspect the portable ZIP.
 - [x] Resolve release version against existing remote tags, update release notes/version, rebuild and reverify relevant tests.
-- [ ] Commit all reviewed Gemini fixes and CS2 work, merge main without force, push and publish ZIP plus checksum under the user's existing authorization.
+- [x] Commit all reviewed Gemini fixes and CS2 work, merge main without force, push and publish ZIP plus checksum under the user's existing authorization.
 
 ## Ledger
 
@@ -58,3 +58,5 @@ Files: src/powershell/NetBoost_Command_Center.ps1, CS2 menu, README.md, docs/cs2
 - Full verification: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File build/verify-v1.2.0.ps1` passed 15/15 suites, PowerShell 5.1.26100.9818. Logs: build/verification-v1.2.0. Native readonly plan sees no existing CS2/Discord priority rules; planned DWORDs 6 and 5; no live writes.
 - Final review: performed inline by the main agent under the owner's single-agent policy. Verified machine-wide shared root/lock, original baseline retention, scope guards, legacy preparation/session restoration, journal-lock rollback and independent/combined restore. FACEIT live compatibility and IFEO launch behavior remain explicitly unverified, rather than being inferred from mock transactions.
 - Publication version: v1.2.0, because v1.1.0 already exists publicly. Main and origin/main initially match 9f7ae82. Publication authorization is the owner's preceding request, with this addition completed first.
+- Completed: feature commit e74133c fast-forwarded into main; all 15 suites passed again on main. Main and annotated v1.2.0 tag pushed atomically, without force. Public latest release: https://github.com/NguyenBaoChau2203/netboost-command-center/releases/tag/v1.2.0 (release ID 439489399). ZIP and SHA-256 sidecar uploaded; downloaded back and verified byte-for-byte against the local artifact. ZIP SHA-256: 50a98f16d7c8805ca3974a069faf8e80d986ae441abf3cc6536d950fe6e9b4ca. Publication receipt and logs remain in ignored build/verification-v1.2.0.
+- Final readonly compatibility check: the owner's existing preparation journal reads Applied, new persistent-priority journal reads NotApplied, and BackgroundProcess=false. No existing preparation backup or real game/Discord/Anti-Cheat settings were changed during development.
