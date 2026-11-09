@@ -1,17 +1,17 @@
 # NetBoost Command Center
 
-A terminal-based Windows network and cleanup toolkit, with optional Chris Titus WinUtil, Mole CLI and Win11Debloat integrations.
+A terminal-based Windows network, cleanup and CS2 preparation toolkit, with optional Chris Titus WinUtil, Mole CLI and Win11Debloat integrations.
 
 Windows 10/11 · Windows PowerShell 5.1 · Vietnamese / English · MIT
 
-**Current release: v1.1.0** — [Download the portable ZIP](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.1.0/NetBoost-Command-Center-v1.1.0.zip) · [SHA-256 checksum](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.1.0/NetBoost-Command-Center-v1.1.0.zip.sha256) · [Release notes](docs/releases/v1.1.0.md)
+**Current release: v1.2.0** — [Download the portable ZIP](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.0/NetBoost-Command-Center-v1.2.0.zip) · [SHA-256 checksum](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.0/NetBoost-Command-Center-v1.2.0.zip.sha256) · [Release notes](docs/releases/v1.2.0.md)
 
-## Changes in v1.1.0
+## Changes in v1.2.0
 
-- Runs entirely in the terminal; the former browser interface and HTTP backend have been removed.
-- Adds Mole CLI management at **[18]** and Win11Debloat management at **[19]**, including explicit install/download, update and removal choices.
-- Keeps all 15 guarded cleanup targets in a standalone PowerShell module.
-- Retains the Mochi Cat EXE launcher, DNS tools, scheduled Auto DNS, terminal dashboard and Vietnamese/English labels.
+- Adds persistent CS2 Windows/NVIDIA preparation with versioned backups and restoration at **[21]**.
+- Adds optional CS2/voice-only Discord launch priority: apply once, reopen the apps, then launch normally. No NetBoost service, scheduled task or watcher is installed. FACEIT client/Anti-Cheat remain unchanged.
+- Adds network-throttle diagnosis and guarded tuning at **[20]**, with validated atomic backups and original-state restoration. Existing QoS policies are preserved.
+- Retains all terminal DNS/cleanup features, optional-tool managers, the Mochi Cat launcher and Vietnamese/English labels.
 
 When upgrading from v1.0.1, extract the new ZIP into a new folder and run the included EXE. The old Web option 17 and the `--web`/`--port` arguments are no longer supported. The tool integrations retain menu numbers 18 and 19.
 
@@ -53,6 +53,8 @@ TOOLS
  [16] Switch interface language to English
  [18] Quan ly Mole CLI (cai / mo / cap nhat / go cai dat)
  [19] Quan ly Win11Debloat (tai / mo / cap nhat / go)
+ [20] Kiem tra & toi uu bop nghen bang thong Windows
+ [21] Chuan bi choi CS2 (Windows / NVIDIA / Discord / khoi phuc)
  [0 ] Thoat chuong trinh
 ```
 
@@ -95,6 +97,30 @@ The standalone `NetBoost.Cleanup.ps1` module defines and validates these 15 targ
 Cleanup validates canonical roots and child containment, rejects root/profile/Windows-directory deletion and linked traversal, and skips locked files. Windows Update cleanup restores the original running/stopped states of wuauserv and BITS even after errors. Core cleanup does not terminate user applications or graphics drivers.
 
 Events print to the terminal. Parent paths are hidden by default. Use `--detailed-cleanup-logs` to include complete paths for that process. NetBoost does not persist a settings file or start a local server.
+
+## Windows Network Throttling Diagnostic & Optimizer
+
+Option **[20]** (or `--check-throttle`, `--optimize-throttle`, `--revert-throttle`) audits and removes hidden Windows bottlenecks:
+
+- **Multimedia Network Throttling Index**: Removes packet rate-limiting during audio/media playback (`NetworkThrottlingIndex = 0xFFFFFFFF`).
+- **System Responsiveness**: Sets `SystemResponsiveness = 10` (the lowest valid value supported by Windows MMCSS, which treats values below 10 as the default 20) to maximize foreground multimedia and gaming priority.
+- **TCP Window Auto-Tuning**: Ensures TCP Auto-Tuning is set to `Normal` so high-bandwidth downloads are not capped at restrictive window sizes.
+- **Receive-Side Scaling (RSS)**: Ensures network packet processing is distributed across multiple CPU cores.
+- **QoS Reservable Bandwidth**: Audits and preserves existing QoS policy. A reservable bandwidth ceiling is not a fixed loss of bandwidth; the optimizer does not disable voice/media QoS guarantees.
+- **Delivery Optimization P2P (WUDO)**: Sets `DODownloadMode = 0` (HTTP only) to prevent background update uploads to other PCs on the Internet.
+- **Adapter Link Speed**: Verifies physical hardware link speed negotiation (e.g. alerts if a Gigabit network card is running at 100 Mbps).
+
+Includes 1-Click Optimization with automatic baseline backup to `%LOCALAPPDATA%\NetBoost\backup-network-throttle.json` (preserving the original baseline across repeated runs) and a 1-Click Restore function that safely restores or removes unconfigured properties. Restore refuses to reset settings when the original backup is missing or invalid. Backup writes and completion metadata use atomic persistence; unknown original TCP/RSS state blocks optimization.
+
+## CS2 preparation with backup and restore
+
+Option **[21]** previews and applies persistent Windows Game Mode, background-capture and per-CS2 GPU preferences, plus two scoped NVIDIA driver settings. Apply once before starting CS2; you can close NetBoost afterward. Reapplying preserves the original baseline. Restore returns the original registry values/types and NVIDIA override/inheritance state. Versioned backups and recovery journals are under `%LOCALAPPDATA%\NetBoost\cs2`.
+
+The optional **[4]** launch-priority action supplies CS2 AboveNormal and voice-only Discord BelowNormal on future launches, using machine-wide executable-name rules with an independent backup under `%ProgramData%\NetBoost\cs2-priority`. Fully exit/reopen the apps after enabling or restoring the rules. **[7]** restores only priority; **[3]** restores both priority and preparation. NetBoost installs **no background service, task or watcher**. FACEIT client/Anti-Cheat, CPU affinity and security settings stay unchanged. This opt-in IFEO PerfOptions mechanism is not a supported public Win32 contract or a FACEIT certification; another component can change priority after launch. Check actual priority and voice quality on your machine. No whole community NIP profile or global driver profile is imported. Original NIP files can be audited read-only.
+
+CLI: `--cs2`, `--cs2-status`, `--cs2-plan`, `--cs2-optimize`, `--cs2-priority-plan`, `--cs2-priority`, `--cs2-priority-restore`, `--cs2-restore`, `--cs2-exe PATH`, and `--cs2-audit-profile PATH`.
+
+Read the [CS2 usage and recovery guide](docs/cs2-preparation.md) and [research / supplied profile comparison](docs/cs2-research.md). Effects must be measured on the actual machine; the feature does not promise a fixed FPS increase.
 
 ## Optional tools
 

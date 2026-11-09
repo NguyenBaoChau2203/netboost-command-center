@@ -160,8 +160,8 @@ try {
     Assert-True (Test-Path -LiteralPath $outputPath -PathType Leaf) 'build produces the launcher EXE'
 
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($outputPath)
-    Assert-Equal '1.1.0.0' $version.FileVersion 'EXE file version is 1.1.0.0'
-    Assert-Equal '1.1.0' $version.ProductVersion 'EXE product version is 1.1.0'
+    Assert-Equal '1.2.0.0' $version.FileVersion 'EXE file version is 1.2.0.0'
+    Assert-Equal '1.2.0' $version.ProductVersion 'EXE product version is 1.2.0'
     Assert-Equal 'NetBoost Command Center' $version.ProductName 'EXE product name is branded'
 
     $bytes = [IO.File]::ReadAllBytes($outputPath)
@@ -219,7 +219,7 @@ try {
 [pscustomobject]@{
     ok = $true
     assertions = $assertions
-    version = '1.1.0'
+    version = '1.2.0'
     argumentForwarding = 'verified'
     uac = 'verified'
     icon = 'verified'

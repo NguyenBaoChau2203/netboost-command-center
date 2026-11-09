@@ -46,10 +46,10 @@ if (Test-Path -LiteralPath $testRoot) {
 
 try {
     $release = & $releaseBuilderPath -OutputDirectory $testRoot
-    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.1.0.zip'
+    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.2.0.zip'
     $checksumPath = "$zipPath.sha256"
 
-    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.1.0 ZIP'
+    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.2.0 ZIP'
     Assert-True (Test-Path -LiteralPath $checksumPath -PathType Leaf) 'release builder produces the SHA-256 file'
     Assert-Equal ([IO.Path]::GetFullPath($zipPath)) ([IO.Path]::GetFullPath($release.ZipPath)) 'release metadata identifies the ZIP'
 
@@ -62,13 +62,21 @@ try {
         'README.md',
         'assets\brand\netboost-mochi-cat.ico',
         'assets\brand\netboost-mochi-cat.png',
-        'docs\releases\v1.1.0.md',
+        'docs\releases\v1.2.0.md',
         'docs\mole-cli.md',
         'docs\win11debloat-cli.md',
         'src\powershell\NetBoost_Command_Center.ps1',
         'src\powershell\NetBoost.Cleanup.ps1',
         'src\powershell\NetBoost.Mole.ps1',
         'src\powershell\NetBoost.Win11Debloat.ps1',
+        'src\powershell\NetBoost.NetworkThrottle.ps1',
+        'src\powershell\NetBoost.State.ps1',
+        'src\powershell\NetBoost.CS2.ps1',
+        'src\powershell\NetBoost.CS2Priority.ps1',
+        'src\native\NetBoost.NvidiaDrs.cs',
+        'assets\licenses\NVIDIA-NVAPI.txt',
+        'docs\cs2-preparation.md',
+        'docs\cs2-research.md',
         'src\powershell\README.md',
         'tools\Create-NetBoostShortcut.ps1'
     )
@@ -88,13 +96,17 @@ try {
 
     $exePath = Join-Path $extractRoot 'NetBoost Command Center.exe'
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($exePath)
-    Assert-Equal '1.1.0' $version.ProductVersion 'packaged EXE reports product version 1.1.0'
+    Assert-Equal '1.2.0' $version.ProductVersion 'packaged EXE reports product version 1.2.0'
 
     foreach ($relativePath in @(
         'src\powershell\NetBoost_Command_Center.ps1',
         'src\powershell\NetBoost.Cleanup.ps1',
         'src\powershell\NetBoost.Mole.ps1',
         'src\powershell\NetBoost.Win11Debloat.ps1',
+        'src\powershell\NetBoost.NetworkThrottle.ps1',
+        'src\powershell\NetBoost.State.ps1',
+        'src\powershell\NetBoost.CS2.ps1',
+        'src\powershell\NetBoost.CS2Priority.ps1',
         'tools\Create-NetBoostShortcut.ps1'
     )) {
         $tokens = $null
@@ -125,7 +137,7 @@ try {
 
     $actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw).Trim()
-    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.1.0.zip" $checksumLine 'checksum file matches the release ZIP'
+    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.2.0.zip" $checksumLine 'checksum file matches the release ZIP'
     Assert-Equal $actualHash $release.Sha256 'release metadata reports the ZIP checksum'
 } finally {
     if (Test-Path -LiteralPath $testRoot) {
@@ -136,7 +148,7 @@ try {
 [pscustomobject]@{
     ok = $true
     assertions = $assertions
-    version = '1.1.0'
+    version = '1.2.0'
     exe = 'packaged'
     shortcut = 'verified'
     checksum = 'verified'

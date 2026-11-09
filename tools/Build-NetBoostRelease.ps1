@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$version = '1.1.0'
+$version = '1.2.0'
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $launcherBuilderPath = Join-Path $repoRoot 'tools\Build-NetBoostLauncher.ps1'
 
@@ -45,13 +45,21 @@ $requiredInputs = @(
     (Join-Path $repoRoot 'README.md'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.ico'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png'),
-    (Join-Path $repoRoot 'docs\releases\v1.1.0.md'),
+    (Join-Path $repoRoot 'docs\releases\v1.2.0.md'),
     (Join-Path $repoRoot 'docs\mole-cli.md'),
     (Join-Path $repoRoot 'docs\win11debloat-cli.md'),
     (Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'),
     (Join-Path $repoRoot 'src\powershell\NetBoost.Cleanup.ps1'),
     (Join-Path $repoRoot 'src\powershell\NetBoost.Mole.ps1'),
     (Join-Path $repoRoot 'src\powershell\NetBoost.Win11Debloat.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.NetworkThrottle.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.State.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.CS2.ps1'),
+    (Join-Path $repoRoot 'src\powershell\NetBoost.CS2Priority.ps1'),
+    (Join-Path $repoRoot 'src\native\NetBoost.NvidiaDrs.cs'),
+    (Join-Path $repoRoot 'assets\licenses\NVIDIA-NVAPI.txt'),
+    (Join-Path $repoRoot 'docs\cs2-preparation.md'),
+    (Join-Path $repoRoot 'docs\cs2-research.md'),
     (Join-Path $repoRoot 'tools\Create-NetBoostShortcut.ps1')
 )
 foreach ($requiredInput in $requiredInputs) {
@@ -72,8 +80,10 @@ foreach ($filePath in @($zipPath, $checksumPath)) {
 $stageDirectories = @(
     '',
     'assets\brand',
+    'assets\licenses',
     'docs\releases',
     'src\powershell',
+    'src\native',
     'tools'
 )
 foreach ($relativeDirectory in $stageDirectories) {
@@ -96,7 +106,7 @@ Copy-Item -LiteralPath `
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png') `
     -Destination (Join-Path $stagePath 'assets\brand')
 
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.1.0.md') `
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.2.0.md') `
     -Destination (Join-Path $stagePath 'docs\releases')
 
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\mole-cli.md') `
@@ -105,11 +115,19 @@ Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\mole-cli.md') `
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\win11debloat-cli.md') `
     -Destination (Join-Path $stagePath 'docs')
 
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\cs2-preparation.md'), (Join-Path $repoRoot 'docs\cs2-research.md') -Destination (Join-Path $stagePath 'docs')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'assets\licenses\NVIDIA-NVAPI.txt') -Destination (Join-Path $stagePath 'assets\licenses')
+Copy-Item -LiteralPath (Join-Path $repoRoot 'src\native\NetBoost.NvidiaDrs.cs') -Destination (Join-Path $stagePath 'src\native')
+
 Copy-Item -LiteralPath `
     (Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'), `
     (Join-Path $repoRoot 'src\powershell\NetBoost.Cleanup.ps1'), `
     (Join-Path $repoRoot 'src\powershell\NetBoost.Mole.ps1'), `
     (Join-Path $repoRoot 'src\powershell\NetBoost.Win11Debloat.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.NetworkThrottle.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.State.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.CS2.ps1'), `
+    (Join-Path $repoRoot 'src\powershell\NetBoost.CS2Priority.ps1'), `
     (Join-Path $repoRoot 'src\powershell\README.md') `
     -Destination (Join-Path $stagePath 'src\powershell')
 

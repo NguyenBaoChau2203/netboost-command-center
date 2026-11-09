@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
 
 $AppName = 'NetBoost Command Center'
-$AppVersion = '1.1.0'
+$AppVersion = '1.2.0'
 $TaskName = 'NetBoost Auto DNS Optimizer'
 $ScriptPath = $PSCommandPath
 $RawArgs = @($args)
@@ -58,6 +58,8 @@ if ($Language -eq 'EN') {
     $T.Menu16 = "Switch interface language to Vietnamese"
     $T.Menu18 = "Manage Mole CLI (install / open / update / uninstall)"
     $T.Menu19 = "Manage Win11Debloat (download / open / update / remove)"
+    $T.Menu20 = "Audit & optimize Windows network throttling"
+    $T.Menu21 = "CS2 preparation (Windows / NVIDIA / Discord / restore)"
     $T.Menu0  = "Exit program"
 
     # Task Outputs & Alerts
@@ -175,6 +177,8 @@ if ($Language -eq 'EN') {
     $T.Menu16 = "Switch interface language to English"
     $T.Menu18 = "Quan ly Mole CLI (cai / mo / cap nhat / go cai dat)"
     $T.Menu19 = "Quan ly Win11Debloat (tai / mo / cap nhat / go)"
+    $T.Menu20 = "Kiem tra & toi uu bop nghen bang thong Windows"
+    $T.Menu21 = "Chuan bi choi CS2 (Windows / NVIDIA / Discord / khoi phuc)"
     $T.Menu0  = "Thoat chuong trinh"
 
     # Task Outputs & Alerts
@@ -1531,6 +1535,17 @@ function Show-Help {
     Write-Line '  NetBoost_Command_Center.bat --detailed-cleanup-logs' Green
     Write-Line '  NetBoost_Command_Center.bat --lang en' Green
     Write-Line '  NetBoost_Command_Center.bat --lang vi' Green
+    Write-Line '  NetBoost_Command_Center.bat --check-throttle' Green
+    Write-Line '  NetBoost_Command_Center.bat --optimize-throttle' Green
+    Write-Line '  NetBoost_Command_Center.bat --revert-throttle' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-status | --cs2-plan' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-optimize | --cs2-restore' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-priority' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-priority-plan' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-priority-restore' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-plan --cs2-exe "D:\SteamLibrary\steamapps\common\Counter-Strike Global Offensive\game\bin\win64\cs2.exe"' Green
+    Write-Line '  NetBoost_Command_Center.bat --cs2-audit-profile "C:\Profiles\CS2.nip"' Green
     Write-Line ''
 }
 
@@ -1548,7 +1563,9 @@ function Show-Menu {
         [scriptblock]$InputReader = { param([string]$Prompt) Read-UiInput $Prompt },
         [scriptblock]$CleanupCenter = { Show-CleanupCenter },
         [scriptblock]$MoleCenter = { Show-NetBoostMoleCenter },
-        [scriptblock]$DebloatCenter = { Show-NetBoostDebloatCenter }
+        [scriptblock]$DebloatCenter = { Show-NetBoostDebloatCenter },
+        [scriptblock]$ThrottleCenter = { Show-NetworkThrottleCenter },
+        [scriptblock]$CS2Center = { Show-NetBoostCS2Center }
     )
 
     Ensure-Admin
@@ -1580,6 +1597,8 @@ function Show-Menu {
         Write-MenuItem '16' $T.Menu16 Cyan 'Tools'
         Write-MenuItem '18' $T.Menu18 Cyan 'Tools'
         Write-MenuItem '19' $T.Menu19 Cyan 'Tools'
+        Write-MenuItem '20' $T.Menu20 Cyan 'Tools'
+        Write-MenuItem '21' $T.Menu21 Cyan 'Tools'
         Write-MenuItem '0' $T.Menu0 Red 'Exit'
         Write-Line ''
 
@@ -1605,6 +1624,8 @@ function Show-Menu {
                 '16' { Switch-UiLanguage }
                 '18' { & $MoleCenter }
                 '19' { & $DebloatCenter }
+                '20' { & $ThrottleCenter }
+                '21' { & $CS2Center }
                 '0' { return }
                 default { Write-Status Error $T.InvalidChoice; Start-Sleep -Milliseconds 700 }
             }
@@ -1620,9 +1641,15 @@ function Parse-Args {
     $mode = 'Menu'
     $invalidArguments = @()
     $detailedCleanupLogs = $false
+    $cs2Exe = $null
+    $nipPath = $null
+    $actionCount = 0
+    $hasCS2Action = $false
 
     for ($i = 0; $i -lt $RawArgs.Count; $i++) {
         $arg = $RawArgs[$i].ToLowerInvariant()
+        if($arg -notin @('--lang','-lang','--detailed-cleanup-logs','--cs2-exe')){$actionCount++}
+        if($arg -like '--cs2*' -and $arg -ne '--cs2-exe'){$hasCS2Action=$true}
         switch ($arg) {
             '--lang' { $i++ }
             '-lang' { $i++ }
@@ -1643,6 +1670,22 @@ function Parse-Args {
             '-dashboard' { $mode = 'Dashboard' }
             '--mole' { $mode = 'Mole' }
             '--win11debloat' { $mode = 'Win11Debloat' }
+            '--cs2' { $mode = 'CS2' }
+            '--cs2-status' { $mode = 'CS2Status' }
+            '--cs2-plan' { $mode = 'CS2Plan' }
+            '--cs2-optimize' { $mode = 'CS2Optimize' }
+            '--cs2-restore' { $mode = 'CS2Restore' }
+            '--cs2-priority' { $mode = 'CS2Priority' }
+            '--cs2-priority-plan' { $mode = 'CS2PriorityPlan' }
+            '--cs2-priority-restore' { $mode = 'CS2PriorityRestore' }
+            '--cs2-exe' { if($i+1 -lt $RawArgs.Count -and $RawArgs[$i+1] -notmatch '^--'){ $i++;$cs2Exe=$RawArgs[$i] }else{$invalidArguments+=$arg} }
+            '--cs2-audit-profile' { $mode='CS2Audit';if($i+1 -lt $RawArgs.Count -and $RawArgs[$i+1] -notmatch '^--'){ $i++;$nipPath=$RawArgs[$i] }else{$invalidArguments+=$arg} }
+            '--check-throttle' { $mode = 'CheckThrottle' }
+            '-check-throttle' { $mode = 'CheckThrottle' }
+            '--optimize-throttle' { $mode = 'OptimizeThrottle' }
+            '-optimize-throttle' { $mode = 'OptimizeThrottle' }
+            '--revert-throttle' { $mode = 'RevertThrottle' }
+            '-revert-throttle' { $mode = 'RevertThrottle' }
             '--help' { $mode = 'Help' }
             '-help' { $mode = 'Help' }
             '/?' { $mode = 'Help' }
@@ -1650,16 +1693,21 @@ function Parse-Args {
         }
     }
 
+    if($hasCS2Action -and $actionCount -gt 1){$invalidArguments+='Choose exactly one CS2 action per command.'}
     return [pscustomobject]@{
         Mode = if ($invalidArguments.Count) { 'Invalid' } else { $mode }
         InvalidArguments = $invalidArguments
         DetailedCleanupLogs = $detailedCleanupLogs
+        CS2Exe = $cs2Exe
+        NipPath = $nipPath
     }
 }
 
 . (Join-Path $PSScriptRoot 'NetBoost.Cleanup.ps1')
 . (Join-Path $PSScriptRoot 'NetBoost.Mole.ps1')
 . (Join-Path $PSScriptRoot 'NetBoost.Win11Debloat.ps1')
+. (Join-Path $PSScriptRoot 'NetBoost.NetworkThrottle.ps1')
+. (Join-Path $PSScriptRoot 'NetBoost.CS2.ps1')
 
 $parsed = Parse-Args
 $script:DetailedCleanupLogs = $parsed.DetailedCleanupLogs
@@ -1670,6 +1718,49 @@ switch ($parsed.Mode) {
     'Dashboard' { Show-Dashboard }
     'Mole' { Show-NetBoostMoleCenter }
     'Win11Debloat' { Show-NetBoostDebloatCenter }
+    'CS2' { Ensure-Admin;Show-NetBoostCS2Center -ExePath $parsed.CS2Exe }
+    { $_ -in @('CS2Status','CS2Plan','CS2Audit','CS2Optimize','CS2Restore','CS2Priority','CS2PriorityPlan','CS2PriorityRestore') } {
+        try {
+            $result=switch($parsed.Mode){
+                'CS2Status' { Get-NetBoostCS2Status -ExePath $parsed.CS2Exe }
+                'CS2Plan' { Get-NetBoostCS2Plan -ExePath $parsed.CS2Exe }
+                'CS2Audit' { Get-NetBoostNipAudit -Path $parsed.NipPath }
+                'CS2Optimize' { Ensure-Admin;Invoke-NetBoostCS2Optimize -ExePath $parsed.CS2Exe }
+                'CS2Restore' { Ensure-Admin;Restore-NetBoostCS2All }
+                'CS2Priority' { Ensure-Admin;Set-NetBoostCS2ProcessPriority -ExePath $parsed.CS2Exe -IncludeDiscord }
+                'CS2PriorityPlan' { Get-NetBoostCS2PriorityPlan -ExePath $parsed.CS2Exe -IncludeDiscord }
+                'CS2PriorityRestore' { Ensure-Admin;Restore-NetBoostCS2Priority }
+            }
+            $result|ConvertTo-Json -Depth 12
+            if($result.PSObject.Properties.Name -contains 'Success' -and -not $result.Success){exit 1}
+        } catch {Write-Status Error $_.Exception.Message;exit 1}
+    }
+    'CheckThrottle' {
+        $status = Get-NetworkThrottleStatus
+        $ui = Get-NetBoostNetworkThrottleText
+        Write-UiHeader $ui.Header 'Tools'
+        foreach ($item in $status.Items) {
+            Write-Host ("  {0,-14} {1,-35} -> {2}" -f $item.Status, $item.Id, $item.DisplayVal)
+        }
+    }
+    'OptimizeThrottle' {
+        $res = Optimize-NetworkThrottle
+        if ($res.Success) {
+            Write-Status Ok ("Network settings optimized. Backup: {0}" -f $res.BackupPath)
+        } else {
+            Write-Status Error ("Failed to optimize network settings: {0}" -f ($res.Errors -join '; '))
+            exit 1
+        }
+    }
+    'RevertThrottle' {
+        $res = Restore-NetworkThrottle
+        if ($res.Success) {
+            Write-Status Ok ("Network settings restored.")
+        } else {
+            Write-Status Error ("Failed to restore network settings: {0}" -f ($res.Errors -join '; '))
+            exit 1
+        }
+    }
     'AutoDns' { Invoke-AutoDns }
     'Google' { Set-DnsProvider -ProviderName Google }
     'Cloudflare' { Set-DnsProvider -ProviderName Cloudflare }
