@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Continue'
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new()
 
 $AppName = 'NetBoost Command Center'
-$AppVersion = '1.2.0'
+$AppVersion = '1.2.1'
 $TaskName = 'NetBoost Auto DNS Optimizer'
 $ScriptPath = $PSCommandPath
 $RawArgs = @($args)
@@ -967,7 +967,7 @@ function Remove-FolderContents {
                 Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message
             } else {
                 $filesFailed++
-                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message
+                Write-CleanupEvent -Level ERROR -ItemEvent -TargetId $TargetId -TargetLabel $Label -Path $file.FullName -Bytes ([int64]$file.Length) -Message $_.Exception.Message
             }
         }
     }
@@ -1000,7 +1000,7 @@ function Remove-FolderContents {
                 Write-CleanupEvent -Level SKIP_LOCKED -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message
             } else {
                 $dirsFailed++
-                Write-CleanupEvent -Level ERROR -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message
+                Write-CleanupEvent -Level ERROR -ItemEvent -TargetId $TargetId -TargetLabel $Label -Path $dir.FullName -Message $_.Exception.Message
             }
         }
     }

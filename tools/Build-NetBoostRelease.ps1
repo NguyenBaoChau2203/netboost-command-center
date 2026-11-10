@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$version = '1.2.0'
+$version = '1.2.1'
 $repoRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $launcherBuilderPath = Join-Path $repoRoot 'tools\Build-NetBoostLauncher.ps1'
 
@@ -45,7 +45,7 @@ $requiredInputs = @(
     (Join-Path $repoRoot 'README.md'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.ico'),
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png'),
-    (Join-Path $repoRoot 'docs\releases\v1.2.0.md'),
+    (Join-Path $repoRoot 'docs\releases\v1.2.1.md'),
     (Join-Path $repoRoot 'docs\mole-cli.md'),
     (Join-Path $repoRoot 'docs\win11debloat-cli.md'),
     (Join-Path $repoRoot 'src\powershell\NetBoost_Command_Center.ps1'),
@@ -106,7 +106,7 @@ Copy-Item -LiteralPath `
     (Join-Path $repoRoot 'assets\brand\netboost-mochi-cat.png') `
     -Destination (Join-Path $stagePath 'assets\brand')
 
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.2.0.md') `
+Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\releases\v1.2.1.md') `
     -Destination (Join-Path $stagePath 'docs\releases')
 
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\mole-cli.md') `

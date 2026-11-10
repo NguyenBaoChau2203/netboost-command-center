@@ -13,7 +13,7 @@ Launch the root NetBoost Command Center.exe or NetBoost_Command_Center.bat. For 
 | NetBoost.CS2.ps1 | Persistent Windows/NVIDIA preparation, restricted backup schemas, recovery and CS2 center [21] |
 | NetBoost.CS2Priority.ps1 | Optional machine-wide CS2/voice-only Discord launch priority and independent recovery, without a background helper |
 
-Cleanup validates canonical roots and child containment. Safe Temp cleanup preserves 24 hours; Prefetch removes only .pf files older than 30 days. Windows Update download cleanup is advanced-only and restores the original wuauserv/BITS states in finally. Risky targets require explicit confirmation. Detailed cleanup paths are opt-in with --detailed-cleanup-logs; logs print directly to the terminal.
+Cleanup validates canonical roots and child containment. Safe Temp cleanup preserves 24 hours; Prefetch removes only .pf files older than 30 days. Windows Update download cleanup is advanced-only and restores the original wuauserv/BITS states in finally. Risky targets require explicit confirmation. Detailed cleanup paths are opt-in with --detailed-cleanup-logs; logs print directly to the terminal. Space hides remaining item details for one cleanup selection while deletion and accurate summaries continue; the next selection resets the display. Unsupported/redirected console input keeps ordinary logging.
 
 Mole and Win11Debloat are downloaded only after user confirmation and are not bundled into NetBoost. See [Mole](../../docs/mole-cli.md) and [Win11Debloat](../../docs/win11debloat-cli.md) usage documents.
 

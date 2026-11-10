@@ -4,9 +4,14 @@ A terminal-based Windows network, cleanup and CS2 preparation toolkit, with opti
 
 Windows 10/11 · Windows PowerShell 5.1 · Vietnamese / English · MIT
 
-**Current release: v1.2.0** — [Download the portable ZIP](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.0/NetBoost-Command-Center-v1.2.0.zip) · [SHA-256 checksum](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.0/NetBoost-Command-Center-v1.2.0.zip.sha256) · [Release notes](docs/releases/v1.2.0.md)
+**Current release: v1.2.1** — [Download the portable ZIP](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.1/NetBoost-Command-Center-v1.2.1.zip) · [SHA-256 checksum](https://github.com/NguyenBaoChau2203/netboost-command-center/releases/download/v1.2.1/NetBoost-Command-Center-v1.2.1.zip.sha256) · [Release notes](docs/releases/v1.2.1.md)
 
-## Changes in v1.2.0
+## Changes in v1.2.1
+
+- Press **Space** during cleanup file output to hide the remaining details for that run. Deletion continues, accurate summaries and important target warnings/errors remain visible, and the next run displays details again.
+- Uses nonblocking console input; no background thread or persistent setting. Existing cleanup policies and CS2 backups are preserved.
+
+## Features introduced in v1.2.0
 
 - Adds persistent CS2 Windows/NVIDIA preparation with versioned backups and restoration at **[21]**.
 - Adds optional CS2/voice-only Discord launch priority: apply once, reopen the apps, then launch normally. No NetBoost service, scheduled task or watcher is installed. FACEIT client/Anti-Cheat remain unchanged.
@@ -96,7 +101,9 @@ The standalone `NetBoost.Cleanup.ps1` module defines and validates these 15 targ
 
 Cleanup validates canonical roots and child containment, rejects root/profile/Windows-directory deletion and linked traversal, and skips locked files. Windows Update cleanup restores the original running/stopped states of wuauserv and BITS even after errors. Core cleanup does not terminate user applications or graphics drivers.
 
-Events print to the terminal. Parent paths are hidden by default. Use `--detailed-cleanup-logs` to include complete paths for that process. NetBoost does not persist a settings file or start a local server.
+Events print to the terminal. While file details are scrolling, press **Space** to hide the remaining file/directory rows for that cleanup run. Deletion continues, and summaries and target-level warnings/errors stay visible. Skipped/failed-file counts are still included in the results. The next cleanup run shows details again. Space skips output, so ongoing disk operations must finish before the final results can be accurate. Input is checked without waiting; redirected/noninteractive runs keep normal logging.
+
+Parent paths are hidden by default. Use `--detailed-cleanup-logs` to include complete paths for that process. NetBoost does not persist a settings file or start a local server.
 
 ## Windows Network Throttling Diagnostic & Optimizer
 

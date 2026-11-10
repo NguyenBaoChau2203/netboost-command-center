@@ -1,6 +1,54 @@
 #Requires -Version 5.1
 # Terminal cleanup policies, validation, dispatch and local console logging.
 $script:DetailedCleanupLogs = $false
+$script:CleanupDisplayState = $null
+
+function New-CleanupDisplayState {
+    param([scriptblock]$KeyReader = $null)
+
+    $canReadKeys = $null -ne $KeyReader
+    if (-not $canReadKeys) {
+        try {
+            if (-not [Console]::IsInputRedirected -and -not [Console]::IsOutputRedirected) {
+                $null = [Console]::KeyAvailable
+                $canReadKeys = $true
+            }
+        } catch { $canReadKeys = $false }
+    }
+    if ($null -eq $KeyReader) {
+        $KeyReader = {
+            # Check without waiting; cap work if many keys were queued.
+            for ($index = 0; $index -lt 32 -and [Console]::KeyAvailable; $index++) {
+                $key = [Console]::ReadKey($true)
+                if ($key.Key -eq [ConsoleKey]::Spacebar) { return [ConsoleKey]::Spacebar }
+            }
+            return $null
+        }
+    }
+    return [pscustomobject]@{ Muted = $false; HintShown = $false; CanReadKeys = $canReadKeys; KeyReader = $KeyReader }
+}
+
+function Test-CleanupItemDisplaySkipped {
+    $state = $script:CleanupDisplayState
+    if ($null -eq $state) { return $false }
+    if ($state.Muted) { return $true }
+    if (-not $state.CanReadKeys) { return $false }
+
+    if (-not $state.HintShown) {
+        $hint = if ($Language -eq 'EN') { 'Press Space to hide file details and wait for the cleanup results.' } else { 'Nhan Space de an danh sach tep va cho ket qua don dep.' }
+        Write-Line $hint DarkGray
+        $state.HintShown = $true
+    }
+    try { $key = & $state.KeyReader }
+    catch { $state.CanReadKeys = $false; return $false }
+    if ($key -eq [ConsoleKey]::Spacebar) {
+        $state.Muted = $true
+        $message = if ($Language -eq 'EN') { 'File details hidden. Cleanup continues; results will appear when complete.' } else { 'Da an danh sach tep. Don dep van tiep tuc; ket qua se hien khi hoan tat.' }
+        Write-Line $message Cyan
+        return $true
+    }
+    return $false
+}
 
 function Test-CleanupLockedError {
     param([System.Management.Automation.ErrorRecord]$ErrorRecord)
@@ -52,8 +100,12 @@ function Write-CleanupEvent {
         [string]$TargetLabel = '',
         [string]$Path = '',
         [Nullable[int64]]$Bytes = $null,
-        [string]$Message = ''
+        [string]$Message = '',
+        [switch]$ItemEvent
     )
+
+    $isItem = $ItemEvent -or $Level -in @('DELETE_OK', 'DELETE_DIR', 'SKIP_LOCKED')
+    if ($isItem -and (Test-CleanupItemDisplaySkipped)) { return }
 
     $event = [ordered]@{
         timestamp = (Get-Date).ToString('o')
@@ -200,42 +252,49 @@ function Invoke-CleanupTargetSet {
         [string[]]$TargetIds,
         [bool]$Deep,
         [bool]$Confirmed,
-        [scriptblock]$OnTargetStart = $null
+        [scriptblock]$OnTargetStart = $null,
+        [scriptblock]$DisplayKeyReader = $null
     )
 
     $selected = @(Resolve-CleanupTargetSelection -TargetIds $TargetIds -Deep $Deep -Confirmed $Confirmed)
-    $index = 0
-    foreach ($target in $selected) {
-        $index++
-        if ($null -ne $OnTargetStart) {
-            & $OnTargetStart $target $index $selected.Count
-        }
+    $previousDisplayState = $script:CleanupDisplayState
+    $script:CleanupDisplayState = New-CleanupDisplayState -KeyReader $DisplayKeyReader
+    try {
+        $index = 0
+        foreach ($target in $selected) {
+            $index++
+            if ($null -ne $OnTargetStart) {
+                & $OnTargetStart $target $index $selected.Count
+            }
 
-        switch ($target.action) {
-            'recycle-bin' {
-                Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin'
-                try {
-                    Clear-RecycleBin -Force -ErrorAction Stop
-                    Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed'
-                } catch {
-                    Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message
+            switch ($target.action) {
+                'recycle-bin' {
+                    Write-CleanupEvent -Level INFO -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Clearing Recycle Bin'
+                    try {
+                        Clear-RecycleBin -Force -ErrorAction Stop
+                        Write-CleanupEvent -Level SUMMARY -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message 'Recycle Bin cleanup completed'
+                    } catch {
+                        Write-CleanupEvent -Level WARN -TargetId $target.id -TargetLabel $target.label -Path 'Recycle Bin' -Message $_.Exception.Message
+                    }
                 }
-            }
-            'delivery-optimization' {
-                Invoke-DeliveryOptimizationCleanup -TargetId $target.id -TargetLabel $target.label
-            }
-            'component-store' {
-                Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label
-            }
-            'windows-update-downloads' {
-                Invoke-WindowsUpdateDownloadCleanup -TargetId $target.id -TargetLabel $target.label
-            }
-            default {
-                $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
-                foreach ($path in @($target.paths)) {
-                    Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $minAgeMinutes -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments -TargetId $target.id
+                'delivery-optimization' {
+                    Invoke-DeliveryOptimizationCleanup -TargetId $target.id -TargetLabel $target.label
+                }
+                'component-store' {
+                    Invoke-ComponentStoreCleanup -TargetId $target.id -TargetLabel $target.label
+                }
+                'windows-update-downloads' {
+                    Invoke-WindowsUpdateDownloadCleanup -TargetId $target.id -TargetLabel $target.label
+                }
+                default {
+                    $minAgeMinutes = if ($Deep) { $target.deepMinAgeMinutes } else { $target.safeMinAgeMinutes }
+                    foreach ($path in @($target.paths)) {
+                        Remove-FolderContents -Path $path -Label $target.label -MinAgeMinutes $minAgeMinutes -IncludePatterns $target.includePatterns -ExcludePathSegments $target.excludePathSegments -TargetId $target.id
+                    }
                 }
             }
         }
+    } finally {
+        $script:CleanupDisplayState = $previousDisplayState
     }
 }

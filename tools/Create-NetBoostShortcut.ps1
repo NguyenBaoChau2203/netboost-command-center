@@ -60,7 +60,7 @@ try {
     $shortcut.TargetPath = $launcherPath
     $shortcut.WorkingDirectory = $repoRoot
     $shortcut.IconLocation = "$iconPath,0"
-    $shortcut.Description = 'NetBoost Command Center 1.2.0 - Mochi Cat'
+    $shortcut.Description = 'NetBoost Command Center 1.2.1 - Mochi Cat'
     $shortcut.WindowStyle = 1
     $shortcut.Save()
 } finally {
@@ -81,5 +81,5 @@ if (-not (Test-Path -LiteralPath $resolvedShortcutPath -PathType Leaf)) {
     TargetPath = $launcherPath
     WorkingDirectory = $repoRoot
     IconLocation = "$iconPath,0"
-    Version = '1.2.0'
+    Version = '1.2.1'
 }

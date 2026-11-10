@@ -13,6 +13,7 @@ Run these from the repository root in Windows PowerShell 5.1. Each suite uses di
 .\tests\cs2-native.ps1
 .\tests\cli-cleanup-center.ps1
 .\tests\cleanup-safety.ps1
+.\tests\cleanup-display.ps1
 .\tests\mole-integration.ps1
 .\tests\win11debloat-integration.ps1
 .\tests\exe-launcher.ps1
@@ -32,6 +33,7 @@ Run these from the repository root in Windows PowerShell 5.1. Each suite uses di
 | terminal-only | Removed components/dependencies absent, HTTP functions absent, all 15 cleanup targets retained, legacy flags rejected without launching anything, CLI logging privacy, menu 18/19 routing |
 | cli-cleanup-center | Safe/confirmed/advanced mappings, exact CONFIRM behavior, localized labels and main-menu routing |
 | cleanup-safety | Canonical roots, child containment, Prefetch policies, deep/confirmation guards, Windows Update service restoration and synchronous dispatch |
+| cleanup-display | Space vs other keys, per-run/cross-target output skipping, continued real fixture deletion and accurate locked-file counts, visible summaries/errors, reset/finally restoration and unavailable-console fallback |
 | mole-integration | Version/channel detection, official release URLs/digests, install/update/uninstall confirmation, local ZIP fixtures and offline behavior |
 | win11debloat-integration | Dated releases, portable ownership, CLI/WhatIf arguments, update failures, unknown-file and registry-backup preservation |
 | exe-launcher | Windows argument round-trips, UAC process settings, exit codes, native EXE metadata and embedded icon |

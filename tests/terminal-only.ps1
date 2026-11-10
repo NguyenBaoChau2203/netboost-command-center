@@ -28,7 +28,7 @@ Assert-True (($targets | Where-Object id -eq 'windows-update-downloads').deepOnl
 foreach ($lang in @('en','vi')) {
     $help = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $entrypoint --lang $lang --help | Out-String
     Assert-True ($LASTEXITCODE -eq 0) "Help failed for $lang."
-    Assert-True ($help.Contains('NetBoost Command Center v1.2.0')) 'Terminal help must identify the published application version.'
+    Assert-True ($help.Contains('NetBoost Command Center v1.2.1')) 'Terminal help must identify the published application version.'
     Assert-True ($help -notmatch '--web|--port|47812|Web UI') 'Help must describe terminal commands only.'
     Assert-True ($help.Contains('--mole') -and $help.Contains('--win11debloat') -and $help.Contains('--dashboard')) 'Help must retain the existing tool and terminal dashboard commands.'
 }

@@ -46,10 +46,10 @@ if (Test-Path -LiteralPath $testRoot) {
 
 try {
     $release = & $releaseBuilderPath -OutputDirectory $testRoot
-    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.2.0.zip'
+    $zipPath = Join-Path $testRoot 'NetBoost-Command-Center-v1.2.1.zip'
     $checksumPath = "$zipPath.sha256"
 
-    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.2.0 ZIP'
+    Assert-True (Test-Path -LiteralPath $zipPath -PathType Leaf) 'release builder produces the v1.2.1 ZIP'
     Assert-True (Test-Path -LiteralPath $checksumPath -PathType Leaf) 'release builder produces the SHA-256 file'
     Assert-Equal ([IO.Path]::GetFullPath($zipPath)) ([IO.Path]::GetFullPath($release.ZipPath)) 'release metadata identifies the ZIP'
 
@@ -62,7 +62,7 @@ try {
         'README.md',
         'assets\brand\netboost-mochi-cat.ico',
         'assets\brand\netboost-mochi-cat.png',
-        'docs\releases\v1.2.0.md',
+        'docs\releases\v1.2.1.md',
         'docs\mole-cli.md',
         'docs\win11debloat-cli.md',
         'src\powershell\NetBoost_Command_Center.ps1',
@@ -96,7 +96,7 @@ try {
 
     $exePath = Join-Path $extractRoot 'NetBoost Command Center.exe'
     $version = [Diagnostics.FileVersionInfo]::GetVersionInfo($exePath)
-    Assert-Equal '1.2.0' $version.ProductVersion 'packaged EXE reports product version 1.2.0'
+    Assert-Equal '1.2.1' $version.ProductVersion 'packaged EXE reports product version 1.2.1'
 
     foreach ($relativePath in @(
         'src\powershell\NetBoost_Command_Center.ps1',
@@ -137,7 +137,7 @@ try {
 
     $actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
     $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw).Trim()
-    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.2.0.zip" $checksumLine 'checksum file matches the release ZIP'
+    Assert-Equal "$actualHash  NetBoost-Command-Center-v1.2.1.zip" $checksumLine 'checksum file matches the release ZIP'
     Assert-Equal $actualHash $release.Sha256 'release metadata reports the ZIP checksum'
 } finally {
     if (Test-Path -LiteralPath $testRoot) {
@@ -148,7 +148,7 @@ try {
 [pscustomobject]@{
     ok = $true
     assertions = $assertions
-    version = '1.2.0'
+    version = '1.2.1'
     exe = 'packaged'
     shortcut = 'verified'
     checksum = 'verified'
